@@ -1,4 +1,4 @@
-// js/modules/eventHandlers.js
+// js/modules/eventHandlers.js (修正版)
 
 import { state, getFilters } from './state.js';
 import { dom } from './dom.js';
@@ -102,7 +102,6 @@ export async function mainFetchProjectNameSuggestions(query) {
     }
 }
 
-// Event Handlers
 export function handleDateRangeChange() {
     const value = dom.dateRangeSelect.value;
     if (value === 'custom') return;
@@ -429,6 +428,21 @@ export function copyShareUrl() {
     document.execCommand('copy');
     dom.copyFeedback.classList.remove('hidden');
     setTimeout(() => { dom.copyFeedback.classList.add('hidden'); }, 2000);
+}
+
+export function handleLegendClick(e) {
+    const legendItem = e.target.closest('.legend-item');
+    if (!legendItem) return;
+    const { filterType, filterValue } = legendItem.dataset;
+    if (legendItem.classList.contains('active')) {
+        legendItem.classList.remove('active');
+        state.currentLegendFilter = { type: null, value: null };
+    } else {
+        dom.heatmapLegendContainer.querySelectorAll('.legend-item.active').forEach(item => item.classList.remove('active'));
+        legendItem.classList.add('active');
+        state.currentLegendFilter = { type: filterType, value: filterValue };
+    }
+    renderers.applyHeatmapGridFilter();
 }
 
 export function handleGlobalClick(e) {
