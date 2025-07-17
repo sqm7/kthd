@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>報告載入中...</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f2f5; }
+        .loader { font-size: 1.5rem; color: #555; }
+    </style>
+</head>
+<body>
+
+    <div id="report-container">
+        <div class="loader">正在為您載入報告，請稍候...</div>
+    </div>
+
+    <script>
+        async function loadReport() {
+            const reportContainer = document.getElementById('report-container');
+            
+            try {
+                // 從網址的查詢參數中取得 token
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
+
+                if (!token) {
+                    throw new Error('網址中找不到分享權杖 (token)');
+                }
+
+                // 【重要】請將下方的 <YOUR_PROJECT_REF> 替換成您的 Supabase 專案 ID
+                const projectRef = 'zxbmbbfrzbtuueysicoc'; 
+                const functionUrl = `https://${projectRef}.supabase.co/functions/v1/public-report/${token}`;
+
+                // 呼叫 Edge Function
+                const response = await fetch(functionUrl);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: '無法解析錯誤回應' }));
+                    throw new Error(`無法取得報告資料：${errorData.error || response.statusText}`);
+                }
+
+                // 解析回傳的 JSON
+                const data = await response.json();
+
+                if (data.html) {
+                    // 將報告的 HTML 內容直接注入到頁面中
+                    document.body.innerHTML = data.html;
+                    // 從注入的 HTML 中找到 title 標籤並更新頁面標題
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = data.html;
+                    const titleTag = tempDiv.querySelector('title');
+                    if(titleTag) {
+                        document.title = titleTag.textContent;
+                    }
+                } else {
+                    throw new Error('回傳的資料格式不正確');
+                }
+
+            } catch (error) {
+                console.error('載入報告失敗:', error);
+                reportContainer.innerHTML = `<div class="loader" style="color: red;">載入報告失敗：${error.message}</div>`;
+            }
+        }
+
+        // 頁面載入後執行
+        window.addEventListener('load', loadReport);
+    </script>
+
+</body>
+</html>

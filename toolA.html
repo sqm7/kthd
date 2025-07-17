@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平面圖尺寸測量工具 (最終完整檔案)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: #1a1d29;
+            color: #e5e7eb;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            color: #e5e7eb;
+            text-align: center;
+            margin: 15px 0;
+            flex-shrink: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            flex-grow: 1;
+            overflow: hidden;
+            padding: 0 15px 15px 15px;
+            box-sizing: border-box;
+        }
+        .canvas-wrapper {
+            width: 100%;
+            height: 100%;
+            background-color: #1f2937;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+        }
+        .controls {
+            background: rgba(37, 40, 54, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            border-radius: 12px;
+        }
+        .controls button, .controls .color-picker-group {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            color: #e5e7eb;
+            font-weight: bold;
+            background-color: #2b3546;
+            border: 1px solid #4b5563;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .controls button:hover {
+            transform: translateY(-2px);
+            background-color: #374151;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .controls button.active {
+            transform: scale(0.98);
+            border-color: #06b6d4;
+            background-color: #05a6c4;
+            color: white;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+        }
+        .controls button:disabled {
+            background-color: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .color-picker-group input[type="color"] {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            width: 24px; height: 24px; background-color: transparent; border: none; cursor: pointer; padding: 0;
+        }
+        .color-picker-group input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker-group input[type="color"]::-webkit-color-swatch { border: 1px solid #4b5563; border-radius: 3px;}
+        .color-picker-group input[type="range"] { width: 80px; }
+
+        canvas { display: block; }
+        canvas.cursor-grab { cursor: grab; }
+        canvas.cursor-grabbing { cursor: grabbing; }
+
+        .results {
+            background: rgba(26, 29, 41, 0.9);
+            padding: 10px 15px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            flex-shrink: 0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .results p { font-size: 0.9em; margin: 5px; color: #e5e7eb; }
+        .results span { font-weight: bold; color: #06b6d4; }
+        .info-overlay {
+            position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.5);
+            padding: 5px 10px; border-radius: 5px; font-size: 12px; color: #e5e7eb;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>平面圖尺寸測量工具</h1>
+
+    <div class="container">
+        <div class="controls">
+            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            <button id="uploadButton">上傳平面圖</button>
+            <button id="setScaleButton">1. 設定比例尺</button>
+            <button id="measureLineButton" disabled>2. 測量長度</button>
+            <button id="measureAreaButton" disabled>3. 計算面積</button>
+            <button id="moveDrawingButton" disabled>4. 移動/編輯</button>
+            <button id="deleteSelectedButton" disabled>刪除選取</button>
+            <div class="color-picker-group">
+                <label for="fillColor">填色:</label>
+                <input type="color" id="fillColor" value="#4ade80">
+                <label for="fillOpacity">透明度:</label>
+                <input type="range" id="fillOpacity" min="0" max="1" step="0.05" value="0.3">
+            </div>
+            <button id="clearDrawingsButton">清除繪圖</button>
+            <button id="clearScaleButton">清除比例尺</button>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="floorPlanCanvas"></canvas>
+            <div id="infoOverlay" class="info-overlay">縮放: 100% | 空白鍵+拖曳可平移</div>
+        </div>
+
+        <div class="results">
+            <p>模式: <span id="currentMode">未選擇</span></p>
+            <p>比例尺: <span id="scaleDisplay">未設定</span></p>
+            <p>結果: <span id="measurementResult">無</span></p>
+            <p>選取: <span id="selectedObjectDisplay">無</span></p>
+        </div>
+    </div>
+
+<script>
+    // --- DOM 元素獲取 ---
+    const canvasWrapper = document.querySelector('.canvas-wrapper');
+    const canvas = document.getElementById('floorPlanCanvas');
+    const ctx = canvas.getContext('2d');
+    const imageInput = document.getElementById('imageInput');
+    const uploadButton = document.getElementById('uploadButton');
+    const setScaleButton = document.getElementById('setScaleButton');
+    const measureLineButton = document.getElementById('measureLineButton');
+    const measureAreaButton = document.getElementById('measureAreaButton');
+    const moveDrawingButton = document.getElementById('moveDrawingButton');
+    const deleteSelectedButton = document.getElementById('deleteSelectedButton');
+    const fillColorInput = document.getElementById('fillColor');
+    const fillOpacityInput = document.getElementById('fillOpacity');
+    const clearDrawingsButton = document.getElementById('clearDrawingsButton');
+    const clearScaleButton = document.getElementById('clearScaleButton');
+    const currentModeDisplay = document.getElementById('currentMode');
+    const scaleDisplay = document.getElementById('scaleDisplay');
+    const measurementResult = document.getElementById('measurementResult');
+    const selectedObjectDisplay = document.getElementById('selectedObjectDisplay');
+    const infoOverlay = document.getElementById('infoOverlay');
+
+    // --- 全局狀態變數 ---
+    let originalImage = new Image();
+    let currentMode = null;
+    let drawing = false;
+    let startPoint = { x: 0, y: 0 };
+    let endPoint = { x: 0, y: 0 };
+    let lines = [];
+    let areas = [];
+    let scale = null;
+    let areaPoints = [];
+    let selectedObject = null;
+    let dragStartMouse = { x: 0, y: 0 };
+    let originalSelectedObjectState = null;
+    let draggingHandle = null;
+
+    const PING_FACTOR = 33057.9;
+
+    // --- 縮放、平移、鎖點、放大鏡的狀態變數 ---
+    let zoomLevel = 1;
+    let panOffset = { x: 0, y: 0 };
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let isSpacePressed = false;
+    let isShiftPressed = false;
+    let snapThreshold = 15;
+    let snappedPoint = null;
+    let magnifierEnabled = true;
+    let lastMouseScreenPos = {x: 0, y: 0};
+
+    // --- 核心：座標轉換函式 ---
+    function screenToWorld(point) { return { x: (point.x - panOffset.x) / zoomLevel, y: (point.y - panOffset.y) / zoomLevel }; }
+    function worldToScreen(point) { return { x: point.x * zoomLevel + panOffset.x, y: point.y * zoomLevel + panOffset.y }; }
+
+    // --- 初始化與事件監聽 ---
+    function initialize() {
+        resizeCanvas();
+        addEventListeners();
+        resetTool(true);
+        draw();
+    }
+
+    function addEventListeners() {
+        uploadButton.addEventListener('click', () => imageInput.click());
+        imageInput.addEventListener('change', handleImageUpload);
+        setScaleButton.addEventListener('click', () => setMode('setScale'));
+        measureLineButton.addEventListener('click', () => setMode('measureLine'));
+        measureAreaButton.addEventListener('click', () => setMode('measureArea'));
+        moveDrawingButton.addEventListener('click', () => setMode('moveDrawing'));
+        deleteSelectedButton.addEventListener('click', deleteSelectedObject);
+        clearDrawingsButton.addEventListener('click', clearDrawings);
+        clearScaleButton.addEventListener('click', clearScale);
+        fillColorInput.addEventListener('input', updateStyles);
+        fillOpacityInput.addEventListener('input', updateStyles);
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', handleMouseUp);
+        canvas.addEventListener('mouseleave', () => { if(drawing && currentMode !== 'measureArea') {drawing = false; draw();} });
+        canvas.addEventListener('contextmenu', handleRightClick);
+        canvas.addEventListener('wheel', handleWheel);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('resize', resizeCanvas);
+    }
+
+    // --- 主要繪圖函式 ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(panOffset.x, panOffset.y);
+        ctx.scale(zoomLevel, zoomLevel);
+        if (originalImage.src) {
+            ctx.drawImage(originalImage, -originalImage.naturalWidth / 2, -originalImage.naturalHeight / 2);
+        }
+        drawExistingShapes();
+        drawTemporaryShapes();
+        ctx.restore();
+        drawUIElements();
+    }
+
+    // --- 繪圖輔助函式 ---
+    function drawExistingShapes() {
+        const handleSize = 8 / zoomLevel;
+        const lineWidth = 2 / zoomLevel;
+        const selectedLineWidth = 3.5 / zoomLevel;
+        areas.forEach(area => {
+            const isSelected = selectedObject === area;
+            drawPolygon(area.pixelPoints, area.fillColor, area.fillOpacity, isSelected, lineWidth, selectedLineWidth);
+            if (isSelected && currentMode === 'moveDrawing') { area.pixelPoints.forEach(p => drawHandle(p, handleSize)); }
+            if (scale) drawTextLabel(area);
+        });
+        lines.forEach(line => {
+            const isSelected = selectedObject === line;
+            drawLine(line.pixelStart, line.pixelEnd, isSelected ? '#06b6d4' : line.color, isSelected ? selectedLineWidth : lineWidth);
+            if (isSelected && currentMode === 'moveDrawing') { drawHandle(line.pixelStart, handleSize); drawHandle(line.pixelEnd, handleSize); }
+            if (scale) drawTextLabel(line);
+        });
+    }
+
+    function drawTemporaryShapes() {
+        if (drawing && (currentMode === 'setScale' || currentMode === 'measureLine')) {
+            drawLine(startPoint, endPoint, 'red', 2 / zoomLevel);
+        }
+        if (currentMode === 'measureArea' && areaPoints.length > 0) {
+            drawPolygon(areaPoints, fillColorInput.value, parseFloat(fillOpacityInput.value), false, 2 / zoomLevel, 2 / zoomLevel);
+            if (endPoint.x !== 0 || endPoint.y !== 0) {
+                drawDashedLine(areaPoints[areaPoints.length - 1], endPoint, 'rgba(0, 100, 255, 0.7)', 2 / zoomLevel);
+            }
+        }
+    }
+
+    function drawUIElements() {
+        drawSnapIndicator();
+        if (!isPanning && (currentMode === 'measureLine' || currentMode === 'measureArea' || currentMode === 'setScale' || currentMode === 'moveDrawing')) {
+             drawMagnifier();
+        }
+    }
+
+    function drawLine(p1, p2, color, width) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(); }
+    function drawDashedLine(p1, p2, color, width) { ctx.save(); ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel]); drawLine(p1, p2, color, width); ctx.restore(); }
+    function drawPolygon(points, fillColor, fillOpacity, isSelected, lw, slw) { if (points.length < 2) return; ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y); for (let i = 1; i < points.length; i++) { ctx.lineTo(points[i].x, points[i].y); } ctx.closePath(); const hex = fillColor.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${fillOpacity})`; ctx.fill(); ctx.strokeStyle = isSelected ? '#06b6d4' : '#3b82f6'; ctx.lineWidth = isSelected ? slw : lw; ctx.stroke(); }
+    function drawHandle(point, size) { ctx.fillStyle = '#06b6d4'; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1 / zoomLevel; ctx.fillRect(point.x - size / 2, point.y - size / 2, size, size); ctx.strokeRect(point.x - size / 2, point.y - size / 2, size, size); }
+    function drawTextLabel(object) { ctx.save(); const fontSize = 16 / zoomLevel; ctx.font = `bold ${fontSize}px Noto Sans TC`; ctx.textAlign = 'center'; if (object.type === 'line') { const realLengthCm = calculateDistance(object.pixelStart, object.pixelEnd) / scale; const midX = (object.pixelStart.x + object.pixelEnd.x) / 2; const midY = (object.pixelStart.y + object.pixelEnd.y) / 2; ctx.fillStyle = selectedObject === object ? '#06b6d4' : 'red'; ctx.fillText(`${realLengthCm.toFixed(2)} cm`, midX, midY - (10 / zoomLevel)); } else if (object.type === 'area') { const realAreaCm2 = calculatePolygonArea(object.pixelPoints) / (scale * scale); const realAreaM2 = realAreaCm2 / 10000; const realAreaPing = realAreaCm2 / PING_FACTOR; const centroid = getPolygonCentroid(object.pixelPoints); ctx.fillStyle = selectedObject === object ? '#06b6d4' : 'blue'; ctx.fillText(`${realAreaM2.toFixed(2)} m² / ${realAreaPing.toFixed(2)} 坪`, centroid.x, centroid.y); } ctx.restore(); }
+    function drawSnapIndicator() { if (snappedPoint) { const screenPos = worldToScreen(snappedPoint); ctx.beginPath(); ctx.arc(screenPos.x, screenPos.y, snapThreshold - 2, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)'; ctx.lineWidth = 2; ctx.stroke(); } }
+    function drawMagnifier() { if (!magnifierEnabled || isPanning) return; const mouseX = lastMouseScreenPos.x; const mouseY = lastMouseScreenPos.y; const magnifierSize = 120; const zoomFactor = 4; const sourceSize = magnifierSize / zoomFactor; const sourceX = Math.round(mouseX - sourceSize / 2); const sourceY = Math.round(mouseY - sourceSize / 2); let displayX = mouseX + 30; let displayY = mouseY + 30; if (displayX + magnifierSize > canvas.width) { displayX = mouseX - magnifierSize - 30; } if (displayY + magnifierSize > canvas.height) { displayY = mouseY - magnifierSize - 30; } ctx.save(); ctx.beginPath(); ctx.arc(displayX + magnifierSize / 2, displayY + magnifierSize / 2, magnifierSize / 2, 0, Math.PI * 2); ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 3; ctx.fillStyle = '#1a1d29'; ctx.fill(); ctx.stroke(); ctx.clip(); ctx.drawImage(canvas, sourceX, sourceY, sourceSize, sourceSize, displayX, displayY, magnifierSize, magnifierSize); ctx.beginPath(); ctx.moveTo(displayX + magnifierSize / 2, displayY); ctx.lineTo(displayX + magnifierSize / 2, displayY + magnifierSize); ctx.moveTo(displayX, displayY + magnifierSize / 2); ctx.lineTo(displayX + magnifierSize, displayY + magnifierSize / 2); ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore(); }
+
+    // --- 事件處理 ---
+    function handleMouseDown(e) {
+        if (e.button !== 0) return;
+        const rect = canvas.getBoundingClientRect();
+        const screenPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        lastMouseScreenPos = screenPos;
+        panStart = { x: e.clientX, y: e.clientY };
+
+        if (isSpacePressed) {
+            isPanning = true;
+            canvas.classList.add('cursor-grabbing');
+            return;
+        }
+
+        const worldPos = screenToWorld(screenPos);
+        startPoint = snappedPoint ? { ...snappedPoint } : worldPos;
+        
+        if (!currentMode) return;
+        
+        if (currentMode === 'measureArea') {
+            drawing = true;
+            areaPoints.push(startPoint);
+            endPoint = { ...startPoint };
+        } else if (currentMode === 'moveDrawing') {
+            drawing = true; // Set drawing to true to initiate move/edit
+            draggingHandle = null;
+            // Check for handle hit first
+            if (selectedObject) {
+                const handleHitTolerance = 10 / zoomLevel;
+                const pointsToCheck = selectedObject.type === 'line' ? [selectedObject.pixelStart, selectedObject.pixelEnd] : selectedObject.pixelPoints;
+                for (const p of pointsToCheck) {
+                    if (calculateDistance(worldPos, p) < handleHitTolerance) {
+                        draggingHandle = p;
+                        break;
+                    }
+                }
+            }
+
+            if (draggingHandle) {
+                // Dragging a handle
+            } else {
+                // No handle hit, check for object selection
+                const foundObject = findObjectAt(worldPos);
+                if (foundObject) {
+                    selectedObject = foundObject;
+                    dragStartMouse = worldPos;
+                    originalSelectedObjectState = JSON.parse(JSON.stringify(selectedObject)); // Deep copy
+                } else {
+                    selectedObject = null;
+                    drawing = false; // Nothing to draw/drag
+                }
+            }
+        } else {
+            drawing = true;
+        }
+        updateUIState();
+        draw();
+    }
+
+    function handleMouseMove(e) {
+        const rect = canvas.getBoundingClientRect();
+        lastMouseScreenPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+        if (isPanning) {
+            panOffset.x += e.clientX - panStart.x;
+            panOffset.y += e.clientY - panStart.y;
+            panStart = { x: e.clientX, y: e.clientY };
+            draw();
+            return;
+        }
+
+        let worldPos = screenToWorld(lastMouseScreenPos);
+        
+        if (isShiftPressed && drawing && currentMode) {
+            let referencePoint = startPoint;
+            if (currentMode === 'measureArea' && areaPoints.length > 0) {
+                referencePoint = areaPoints[areaPoints.length - 1];
+            }
+            worldPos = applyShiftConstraint(referencePoint, worldPos);
+        }
+        
+        checkForSnap(worldPos);
+        endPoint = snappedPoint ? { ...snappedPoint } : worldPos;
+        
+        if (drawing && currentMode === 'moveDrawing' && selectedObject) {
+            const dx = worldPos.x - dragStartMouse.x;
+            const dy = worldPos.y - dragStartMouse.y;
+            if (draggingHandle) {
+                draggingHandle.x = worldPos.x;
+                draggingHandle.y = worldPos.y;
+            } else if (originalSelectedObjectState) {
+                if (selectedObject.type === 'line') {
+                    selectedObject.pixelStart.x = originalSelectedObjectState.pixelStart.x + dx;
+                    selectedObject.pixelStart.y = originalSelectedObjectState.pixelStart.y + dy;
+                    selectedObject.pixelEnd.x = originalSelectedObjectState.pixelEnd.x + dx;
+                    selectedObject.pixelEnd.y = originalSelectedObjectState.pixelEnd.y + dy;
+                } else if (selectedObject.type === 'area') {
+                    selectedObject.pixelPoints.forEach((p, i) => {
+                        p.x = originalSelectedObjectState.pixelPoints[i].x + dx;
+                        p.y = originalSelectedObjectState.pixelPoints[i].y + dy;
+                    });
+                }
+            }
+        }
+        draw();
+    }
+
+    function handleMouseUp(e) {
+        if (e.button !== 0) return;
+        if (isPanning) {
+            isPanning = false;
+            canvas.classList.remove('cursor-grabbing');
+            if (isSpacePressed) canvas.classList.add('cursor-grab');
+            return;
+        }
+        
+        if (!drawing) return;
+        if (currentMode === 'measureArea') return;
+
+        if (currentMode === 'moveDrawing') {
+            draggingHandle = null;
+            originalSelectedObjectState = null;
+        } else {
+            const pixelDistance = calculateDistance(startPoint, endPoint);
+            if (currentMode === 'setScale') {
+                const realLengthCm = parseFloat(prompt("請輸入這條線段實際的長度 (公分):"));
+                if (!isNaN(realLengthCm) && realLengthCm > 0) {
+                    scale = pixelDistance / realLengthCm;
+                    lines.push({type: 'line', pixelStart: {...startPoint}, pixelEnd: {...endPoint}, color: '#06b6d4'});
+                    setMode(null);
+                    enableMeasurementButtons(true);
+                }
+            } else if (currentMode === 'measureLine' && scale) {
+                lines.push({type: 'line', pixelStart: {...startPoint}, pixelEnd: {...endPoint}, color: '#facc15'});
+            }
+        }
+        
+        drawing = false;
+        draw();
+    }
+
+    function handleRightClick(e) {
+        e.preventDefault();
+        if (currentMode === 'measureArea' && areaPoints.length >= 3) {
+            areas.push({type: 'area', pixelPoints: [...areaPoints], fillColor: fillColorInput.value, fillOpacity: parseFloat(fillOpacityInput.value)});
+        }
+        areaPoints = [];
+        drawing = false;
+        setMode(null);
+        draw();
+    }
+
+    function handleKeyDown(e) {
+        if (e.repeat) return;
+        if (e.code === 'Space' && !isSpacePressed) {
+            isSpacePressed = true;
+            if(!isPanning) canvas.classList.add('cursor-grab');
+        }
+        if (e.key === 'Shift' && !isShiftPressed) {
+            isShiftPressed = true;
+            const moveEvent = new MouseEvent('mousemove', { clientX: lastMouseScreenPos.x + canvas.getBoundingClientRect().left, clientY: lastMouseScreenPos.y + canvas.getBoundingClientRect().top });
+            canvas.dispatchEvent(moveEvent);
+        }
+    }
+
+    function handleKeyUp(e) {
+        if (e.code === 'Escape') { setMode(null); drawing = false; areaPoints = []; draw(); }
+        if (e.code === 'Space') { isSpacePressed = false; canvas.classList.remove('cursor-grab'); }
+        if (e.key === 'Shift') { 
+            isShiftPressed = false; 
+            const moveEvent = new MouseEvent('mousemove', { clientX: lastMouseScreenPos.x + canvas.getBoundingClientRect().left, clientY: lastMouseScreenPos.y + canvas.getBoundingClientRect().top });
+            canvas.dispatchEvent(moveEvent);
+        }
+    }
+
+    // --- 其他核心邏輯 ---
+    function handleImageUpload(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { originalImage.onload = () => { resetTool(false); const hRatio = canvas.width / originalImage.naturalWidth; const vRatio = canvas.height / originalImage.naturalHeight; zoomLevel = Math.min(hRatio, vRatio) * 0.9; panOffset = { x: canvas.width / 2, y: canvas.height / 2 }; updateUIState(); draw(); }; originalImage.src = event.target.result; }; reader.readAsDataURL(file); }
+    function resizeCanvas() { canvas.width = canvasWrapper.clientWidth; canvas.height = canvasWrapper.clientHeight; draw(); }
+    function handleWheel(e) { e.preventDefault(); const zoomIntensity = 0.1; const wheel = e.deltaY < 0 ? 1 : -1; const zoom = Math.exp(wheel * zoomIntensity); const rect = canvas.getBoundingClientRect(); const mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top }; const worldPosBeforeZoom = screenToWorld(mousePos); zoomLevel *= zoom; zoomLevel = Math.max(0.05, Math.min(zoomLevel, 30)); const worldPosAfterZoom = screenToWorld(mousePos); panOffset.x += (worldPosAfterZoom.x - worldPosBeforeZoom.x) * zoomLevel; panOffset.y += (worldPosAfterZoom.y - worldPosBeforeZoom.y) * zoomLevel; updateUIState(); draw(); }
+    function setMode(mode) { if (currentMode === mode && mode !== 'measureArea') mode = null; currentMode = mode; if (mode !== 'moveDrawing') selectedObject = null; if (mode !== 'measureArea') { areaPoints = []; drawing = false; } else { drawing = true; } updateUIState(); draw(); }
+    function resetTool(fullReset) { currentMode = null; drawing = false; startPoint = { x: 0, y: 0 }; endPoint = { x: 0, y: 0 }; lines = []; areas = []; areaPoints = []; selectedObject = null; draggingHandle = null; if (fullReset) { originalImage.src = ''; scale = null; } zoomLevel = 1; panOffset = { x: canvas.width / 2, y: canvas.height / 2 }; updateUIState(); draw(); }
+    function enableMeasurementButtons(enabled) { measureLineButton.disabled = !enabled; measureAreaButton.disabled = !enabled; moveDrawingButton.disabled = !enabled; clearScaleButton.disabled = !enabled; }
+    function updateUIState() {
+        const buttons = [setScaleButton, measureLineButton, measureAreaButton, moveDrawingButton];
+        buttons.forEach(btn => btn.classList.remove('active'));
+        if (currentMode === 'setScale') setScaleButton.classList.add('active');
+        else if (currentMode === 'measureLine') measureLineButton.classList.add('active');
+        else if (currentMode === 'measureArea') measureAreaButton.classList.add('active');
+        else if (currentMode === 'moveDrawing') moveDrawingButton.classList.add('active');
+        currentModeDisplay.textContent = currentMode || '未選擇';
+        scaleDisplay.textContent = scale ? `${scale.toFixed(4)} px/cm` : '未設定';
+        infoOverlay.textContent = `縮放: ${Math.round(zoomLevel*100)}% | 空白鍵+拖曳可平移`;
+        deleteSelectedButton.disabled = !selectedObject;
+        enableMeasurementButtons(!!scale);
+    }
+    function clearDrawings() { if (!confirm("確定要清除所有繪圖嗎？")) return; lines = []; areas = []; if (scale) { scale = null; } resetTool(false); }
+    function clearScale() { if (!confirm("確定要清除比例尺嗎？")) return; scale = null; lines = lines.filter(line => line.color !== '#06b6d4'); updateUIState(); draw(); }
+    function deleteSelectedObject() { if (!selectedObject || !confirm("確定刪除選取的物件嗎？")) return; if (selectedObject.type === 'line' && selectedObject.color === '#06b6d4') { clearScale(); } else { lines = lines.filter(l => l !== selectedObject); areas = areas.filter(a => a !== selectedObject); } selectedObject = null; updateUIState(); draw(); }
+    function updateStyles() { if (selectedObject && selectedObject.type === 'area') { selectedObject.fillColor = fillColorInput.value; selectedObject.fillOpacity = parseFloat(fillOpacityInput.value); draw(); } }
+    function findObjectAt(worldPos) {
+        const lineHitTolerance = 10 / zoomLevel;
+        // Check areas first (top layer)
+        for (let i = areas.length - 1; i >= 0; i--) { if (isPointInPolygon(worldPos, areas[i].pixelPoints)) return areas[i]; }
+        // Check lines
+        for (let i = lines.length - 1; i >= 0; i--) { if (isPointNearLine(worldPos, lines[i].pixelStart, lines[i].pixelEnd, lineHitTolerance)) return lines[i]; }
+        return null;
+    }
+    function checkForSnap(mouseWorldPos) { snappedPoint = null; const snapDistWorldSq = Math.pow(snapThreshold / zoomLevel, 2); let minDistanceSq = snapDistWorldSq; const checkPoint = (p) => { const distSq = (p.x - mouseWorldPos.x) ** 2 + (p.y - mouseWorldPos.y) ** 2; if (distSq < minDistanceSq) { minDistanceSq = distSq; snappedPoint = p; } }; lines.forEach(l => { checkPoint(l.pixelStart); checkPoint(l.pixelEnd); }); areas.forEach(a => a.pixelPoints.forEach(p => checkPoint(p))); areaPoints.forEach(p => checkPoint(p)); }
+    function calculateDistance(p1, p2) { return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2); }
+    function calculatePolygonArea(vertices) { let total = 0; for (let i = 0, l = vertices.length; i < l; i++) { const addX = vertices[i].x; const addY = vertices[i === l - 1 ? 0 : i + 1].y; const subX = vertices[i === l - 1 ? 0 : i + 1].x; const subY = vertices[i].y; total += (addX * addY - subX * subY); } return Math.abs(total / 2); }
+    function getPolygonCentroid(vertices) { if(vertices.length === 0) return {x:0, y:0}; let x = 0, y = 0, signedArea = 0; for (let i = 0; i < vertices.length; i++) { const p1 = vertices[i]; const p2 = vertices[(i + 1) % vertices.length]; const a = p1.x * p2.y - p2.x * p1.y; signedArea += a; x += (p1.x + p2.x) * a; y += (p1.y + p2.y) * a; } const finalSignedArea = signedArea * 3; if (finalSignedArea === 0) return vertices[0]; return { x: x / finalSignedArea, y: y / finalSignedArea }; }
+    function applyShiftConstraint(p1, p2) { const dx = p2.x - p1.x; const dy = p2.y - p1.y; let constrainedP2 = { ...p2 }; if (Math.abs(dx) > Math.abs(dy)) { constrainedP2.y = p1.y; } else { constrainedP2.x = p1.x; } return constrainedP2; }
+    function isPointInPolygon(point, polygon) { let isInside = false; for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) { const xi = polygon[i].x, yi = polygon[i].y; const xj = polygon[j].x, yj = polygon[j].y; const intersect = ((yi > point.y) != (yj > point.y)) && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi); if (intersect) isInside = !isInside; } return isInside; }
+    function isPointNearLine(point, lineStart, lineEnd, tolerance) { const l2 = (lineEnd.x - lineStart.x) ** 2 + (lineEnd.y - lineStart.y) ** 2; if (l2 === 0) return calculateDistance(point, lineStart) < tolerance; let t = ((point.x - lineStart.x) * (lineEnd.x - lineStart.x) + (point.y - lineStart.y) * (lineEnd.y - lineStart.y)) / l2; t = Math.max(0, Math.min(1, t)); const projection = { x: lineStart.x + t * (lineEnd.x - lineStart.x), y: lineStart.y + t * (lineEnd.y - lineStart.y) }; return calculateDistance(point, projection) < tolerance; }
+        
+    // --- 啟動應用 ---
+    initialize();
+
+</script>
+</body>
+</html>

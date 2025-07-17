@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不動產批次上傳工具 v5.0 (含總結報告)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#1a1d29',
+                        'dark-card': '#252836',
+                        'dark-sidebar': '#1f2937',
+                        'cyan-accent': '#06b6d4',
+                        'cyan-light': '#67e8f9',
+                        'purple-accent': '#8b5cf6',
+                        'orange-accent': '#f59e0b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #1a1d29 0%, #252836 100%); min-height: 100vh; }
+        .glass-card { background: rgba(37, 40, 54, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring-circle { stroke-dasharray: 251.2; stroke-dashoffset: 251.2; transition: stroke-dashoffset 0.5s ease-in-out; }
+        .terminal { background: #0f172a; border: 1px solid #334155; font-family: 'Courier New', monospace; color: #64748b; }
+        .terminal-success { color: #10b981; }
+        .terminal-error { color: #ef4444; }
+        .terminal-warning { color: #f59e0b; }
+        .terminal-info { color: #06b6d4; }
+        .status-indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-online { background: #10b981; }
+        .status-offline { background: #ef4444; }
+    </style>
+</head>
+<body class="bg-dark-bg text-white">
+    <div class="bg-dark-sidebar border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-r from-cyan-accent to-purple-accent rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">不動產批次上傳工具</h1>
+                    <p class="text-sm text-gray-400">Real Estate Batch Upload Dashboard v5.0 (Summary)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <span class="status-indicator" id="connectionStatus"></span>
+                    <span class="text-sm text-gray-400" id="connectionText">未連線</span>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-white" id="currentTime"></div>
+                    <div class="text-xs text-gray-400">系統時間</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex">
+        <div class="w-64 bg-dark-sidebar border-r border-gray-700 min-h-screen p-4">
+            <nav class="space-y-2">
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">主要功能</div>
+                <a href="#" class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 1.79 4 4 4h8c0-2.21-1.79-4-4-4H8c-2.21 0-4-1.79-4-4zm0 0V4c0-2.21 1.79-4 4-4h4c2.21 0 4 1.79 4 4v3M4 7h16"></path></svg>
+                    <span>資料庫連線</span>
+                </a>
+                 <a href="#" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <span>檔案上傳</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="flex-1 p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <div class="glass-card rounded-xl p-6 mb-6">
+                        <h2 class="text-lg font-semibold text-white flex items-center mb-6">
+                            <svg class="w-5 h-5 text-cyan-accent mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 1.79 4 4 4h8c0-2.21-1.79-4-4-4H8c-2.21 0-4-1.79-4-4zm0 0V4c0-2.21 1.79-4 4-4h4c2.21 0 4 1.79 4 4v3M4 7h16"></path></svg>
+                            Supabase 資料庫連線
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Supabase URL</label>
+                                <input type="text" id="supabaseUrl" class="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-cyan-accent focus:ring-1 focus:ring-cyan-accent transition-colors" placeholder="https://your-project-ref.supabase.co">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Service Role Key</label>
+                                <input type="password" id="supabaseKey" class="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-cyan-accent focus:ring-1 focus:ring-cyan-accent transition-colors" placeholder="your-service-role-key">
+                            </div>
+                        </div>
+                        <button id="testConnectionButton" class="bg-gradient-to-r from-cyan-accent to-purple-accent text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-cyan-accent/25 transition-all duration-300">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            測試連線
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-xl p-6">
+                        <h2 class="text-lg font-semibold text-white mb-6 flex items-center">
+                           <svg class="w-5 h-5 text-cyan-accent mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                           檔案批次上傳
+                        </h2>
+                        <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center mb-6 hover:border-cyan-accent transition-colors">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <p class="text-gray-300 mb-2">選擇包含所有資料的總資料夾</p>
+                            <p class="text-sm text-gray-400 mb-4">系統將自動掃描並排序所有檔案</p>
+                            <button id="selectFoldersButton" class="bg-gradient-to-r from-cyan-accent to-blue-500 text-white px-8 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-cyan-accent/25 transition-all duration-300">
+                                選擇資料夾
+                            </button>
+                        </div>
+                        
+                        <div id="fileListContainer" class="hidden">
+                            <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                                <h3 class="text-sm font-medium text-gray-300 mb-3">偵測到的檔案</h3>
+                                <div id="fileList" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                            </div>
+                            
+                            <div id="uploadTypeSelector" class="bg-gray-800 rounded-lg p-4 mb-4">
+                               <h3 class="text-sm font-medium text-gray-300 mb-3">選擇上傳類型</h3>
+                                <div class="flex items-center space-x-6 text-sm">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="radio" id="uploadTypeAll" name="uploadType" value="all" class="form-radio h-4 w-4 text-cyan-accent bg-gray-700 border-gray-600 focus:ring-cyan-accent" checked>
+                                        <span>全選</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="radio" id="uploadTypeA" name="uploadType" value="a" class="form-radio h-4 w-4 text-cyan-accent bg-gray-700 border-gray-600 focus:ring-cyan-accent">
+                                        <span>中古 (a)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="radio" id="uploadTypeB" name="uploadType" value="b" class="form-radio h-4 w-4 text-cyan-accent bg-gray-700 border-gray-600 focus:ring-cyan-accent">
+                                        <span>預售 (b)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="radio" id="uploadTypeC" name="uploadType" value="c" class="form-radio h-4 w-4 text-cyan-accent bg-gray-700 border-gray-600 focus:ring-cyan-accent">
+                                        <span>租賃 (c)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button id="startUploadButton" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-lg font-semibold hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                開始上傳
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="glass-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">上傳進度</h3>
+                        <div class="flex items-center justify-center">
+                            <div class="relative w-32 h-32">
+                                <svg class="w-32 h-32 progress-ring" viewBox="0 0 84 84">
+                                     <circle cx="42" cy="42" r="40" stroke="#374151" stroke-width="4" fill="none"/>
+                                     <circle cx="42" cy="42" r="40" stroke="#06b6d4" stroke-width="4" fill="none" class="progress-ring-circle" id="progressCircle"/>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="text-center">
+                                        <div class="text-2xl font-bold text-white" id="progressPercent">0%</div>
+                                        <div class="text-xs text-gray-400">完成度</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <p class="text-sm text-gray-400" id="progressStatus">等待開始...</p>
+                            <p class="text-xs text-gray-500 mt-1" id="currentFileName"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                <div class="glass-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                           <svg class="w-5 h-5 text-cyan-accent mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                           執行日誌
+                        </h3>
+                        <button class="text-xs text-gray-400 hover:text-white" onclick="clearLogs('status')">清除</button>
+                    </div>
+                    <div id="statusContainer" class="terminal rounded-lg p-4 h-80 overflow-y-auto">
+                        <div class="text-gray-400">等待操作...</div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            錯誤日誌
+                        </h3>
+                        <button class="text-xs text-gray-400 hover:text-white" onclick="clearLogs('error')">清除</button>
+                    </div>
+                    <div id="errorLogContainer" class="terminal rounded-lg p-4 h-80 overflow-y-auto">
+                        <div class="text-gray-400">無錯誤記錄</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 設定與常數 ---
+        const counties = { 'A': '臺北市', 'B': '臺中市', 'C': '基隆市', 'D': '臺南市', 'E': '高雄市', 'F': '新北市', 'G': '宜蘭縣', 'H': '桃園市', 'I': '嘉義市', 'J': '新竹縣', 'K': '苗栗縣', 'M': '南投縣', 'N': '彰化縣', 'O': '新竹市', 'P': '雲林縣', 'Q': '嘉義縣', 'T': '屏東縣', 'U': '花蓮縣', 'V': '臺東縣', 'W': '金門縣', 'X': '澎湖縣', 'Z': '連江縣' };
+        const columnMappings = {
+            'a': { '編號': '編號', '鄉鎮市區': '行政區', '交易標的': '交易標的', '土地位置建物門牌': '地址', '交易年月日': '交易日', '交易筆棟數': '交易筆棟數', '移轉層次': '樓層', '建物型態': '建物型態', '主要用途': '主要用途', '建物移轉總面積平方公尺': '產權面積_房車', '建物現況格局-房': '房數', '建物現況格局-廳': '廳數', '建物現況格局-衛': '衛浴數', '總價元': '交易總價', '車位類別': '車位類別', '車位移轉總面積平方公尺': '車位總面積', '車位總價元': '車位總價', '備註': '備註', '主建物面積': '主建物面積', '附屬建物面積': '附屬建物面積', '陽台面積': '陽台面積'},
+            'a_build': { '編號': '編號', '屋齡': '交易屋齡', '主要建材': '結構', '建築完成年月日': '完工日', '建築完成日期': '完工日', '總層數': '總樓層', '移轉情形': '移轉情形' },
+            'a_land': { '編號': '編號', '土地位置': '地號_段', '地號': '地號', '土地移轉面積平方公尺': '土地持分面積', '使用分區或編定': '使用分區', '非都市土地使用分區': '使用分區', '權利人持分分母': '持分分母', '權利人持分分子': '持分分子' },
+            'a_park': { '編號': '編號', '車位類別': '車位類別', '車位價格': '車位價格', '車位面積平方公尺': '車位面積', '車位所在樓層': '車位樓層' },
+            'b': { '編號': '編號', '鄉鎮市區': '行政區', '交易標的': '交易標的', '土地位置建物門牌': '地址', '交易年月日': '交易日', '交易筆棟數': '交易筆棟數', '移轉層次': '樓層', '總層數': '總樓層', '總樓層數': '總樓層', '建物型態': '建物型態', '主要用途': '主要用途', '建物移轉總面積平方公尺': '產權面積_房車', '建物現況格局-房': '房數', '建物現況格局-廳': '廳數', '建物現況格局-衛': '衛浴數', '總價元': '交易總價', '車位類別': '車位類別', '車位移轉總面積平方公尺': '車位總面積', '車位總價元': '車位總價', '備註': '備註', '建案名稱': '建案名稱', '棟及號': '戶別', '解約情形': '解約情形' },
+            'b_land': { '編號': '編號', '土地位置': '地號_段', '地號': '地號', '土地移轉面積平方公尺': '土地持分面積', '使用分區或編定': '使用分區', '非都市土地使用分區': '使用分區', '權利人持分分母': '持分分母', '權利人持分分子': '持分分子' },
+            'b_park': { '編號': '編號', '車位類別': '車位類別', '車位價格': '車位價格', '車位面積平方公尺': '車位面積', '車位所在樓層': '車位樓層' },
+            'c': { '編號': '編號', '鄉鎮市區': '行政區', '交易標的': '交易標的', '土地位置建物門牌': '地址', '租賃年月日': '交易日', '租賃筆棟數': '交易筆棟數', '租賃層次': '樓層', '建物型態': '建物型態', '主要用途': '主要用途', '建物總面積平方公尺': '租賃面積', '建物現況格局-房': '房數', '建物現況格局-廳': '廳數', '建物現況格局-衛': '衛浴數', '總額元': '交易總價', '車位類別': '車位類別', '車位面積平方公尺': '車位總面積', '車位總額元': '車位總價', '備註': '備註', '出租型態': '出租型態', '租賃期間': '租賃期間', '附屬設備': '附屬設備', '租賃住宅服務': '租賃住宅服務' },
+            'c_build': { '編號': '編號', '屋齡': '交易屋齡', '主要建材': '結構', '建築完成年月日': '完工日', '建築完成日期': '完工日', '總層數': '總樓層', '移轉情形': '移轉情形' },
+            'c_land': { '編號': '編號', '土地位置': '地號_段', '地號': '地號', '土地移轉面積平方公尺': '土地租賃面積', '使用分區或編定': '使用分區', '非都市土地使用分區': '使用分區' },
+            'c_park': { '編號': '編號', '車位類別': '車位類別', '車位價格': '車位價格', '車位面積平方公尺': '車位面積', '車位所在樓層': '車位樓層' }
+        };
+
+        let supabase = null;
+        let allFiles = [];
+        let processedMainIds = new Set();
+        // **修改點 1: summary 物件增加 warnings 屬性**
+        let summary = { new: 0, updated: 0, identical: 0, subAdded: 0, errors: 0, warnings: 0 };
+        let isUploading = false;
+
+        const DOM = {
+            selectFoldersButton: document.getElementById('selectFoldersButton'),
+            startUploadButton: document.getElementById('startUploadButton'),
+            testConnectionButton: document.getElementById('testConnectionButton'),
+            statusContainer: document.getElementById('statusContainer'),
+            errorLogContainer: document.getElementById('errorLogContainer'),
+            fileListContainer: document.getElementById('fileListContainer'),
+            fileList: document.getElementById('fileList'),
+            progressCircle: document.getElementById('progressCircle'),
+            progressPercent: document.getElementById('progressPercent'),
+            progressStatus: document.getElementById('progressStatus'),
+            currentFileName: document.getElementById('currentFileName'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            connectionText: document.getElementById('connectionText'),
+            currentTime: document.getElementById('currentTime')
+        };
+        
+        // --- 核心函式 ---
+
+        /**
+         * @MODIFIED
+         * 調整日誌函式以更好地支援多行和 HTML 內容
+         */
+        function addLog(message, type = 'info', container = 'status') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logContainer = container === 'status' ? DOM.statusContainer : DOM.errorLogContainer;
+            const typeClass = `terminal-${type}`;
+            const logEntry = document.createElement('div');
+            // 使用 flex佈局來確保時間戳和訊息內容對齊
+            logEntry.className = 'flex items-start';
+            logEntry.innerHTML = `
+                <span class="text-gray-500 mr-2">[${timestamp}]</span>
+                <div class="flex-1 ${typeClass}">${message}</div>
+            `;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        async function scanDirectory(dirHandle, path = '') {
+            let files = [];
+            for await (const entry of dirHandle.values()) {
+                const currentPath = path ? `${path}/${entry.name}` : entry.name;
+                if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.csv')) {
+                    files.push({ handle: entry, path: currentPath });
+                } else if (entry.kind === 'directory') {
+                    files.push(...await scanDirectory(entry, currentPath));
+                }
+            }
+            return files;
+        }
+
+        async function selectFolders() {
+            resetUI();
+            if (!window.showDirectoryPicker) {
+                addLog('您的瀏覽器不支援資料夾選擇功能，請使用最新版本的 Chrome 或 Edge 瀏覽器。', 'error', 'error');
+                return;
+            }
+            try {
+                addLog('正在掃描資料夾...', 'info');
+                const dirHandle = await window.showDirectoryPicker();
+                const fileInfoList = await scanDirectory(dirHandle);
+                const fileRegex = /^([a-z])_lvr_land_([a-c](?:_build|_land|_park)?)\.csv$/i;
+                allFiles = fileInfoList.map(item => {
+                    const match = item.handle.name.match(fileRegex);
+                    return match ? { 
+                        fileHandle: item.handle, 
+                        name: item.handle.name,
+                        fullPath: item.path,
+                        countyCode: match[1].toLowerCase(), 
+                        tableType: match[2].toLowerCase(), 
+                        isMain: !match[2].includes('_') 
+                    } : null;
+                }).filter(Boolean);
+
+                if (allFiles.length === 0) {
+                    addLog('在選擇的資料夾中沒有找到符合命名規則的檔案。', 'warning', 'status');
+                    return;
+                }
+                
+                DOM.fileList.innerHTML = '';
+                allFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center justify-between p-2 bg-gray-700 rounded text-sm';
+                    fileItem.innerHTML = `<span class="font-mono">${file.fullPath}</span><span class="px-2 py-1 bg-cyan-accent/20 text-cyan-accent rounded text-xs">${file.isMain ? '主表' : '附表'}</span>`;
+                    DOM.fileList.appendChild(fileItem);
+                });
+                DOM.fileListContainer.classList.remove('hidden');
+                addLog(`掃描完成！找到 ${allFiles.length} 個有效檔案。`, 'success');
+                
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    addLog(`選擇資料夾時發生錯誤: ${err.message}`, 'error', 'error');
+                }
+            }
+        }
+
+        async function parseFile(fileInfo) {
+            const file = await fileInfo.fileHandle.getFile();
+            const parseResult = await new Promise((resolve) => {
+                Papa.parse(file, { header: true, skipEmptyLines: true, trimHeaders: true, complete: resolve });
+            });
+
+            if (parseResult.errors && parseResult.errors.length > 0) {
+                const nonCriticalErrorCodes = ['TooManyFields', 'TooFewFields', 'MissingQuotes'];
+                const criticalErrors = parseResult.errors.filter(e => !nonCriticalErrorCodes.includes(e.code));
+                
+                if (criticalErrors.length > 0) {
+                    throw new Error(`CSV 嚴重解析錯誤: ${criticalErrors[0].message}`);
+                }
+
+                // **修改點 2: 發現警告時，增加 summary.warnings 的計數**
+                parseResult.errors.forEach(warning => {
+                    addLog(`檔案 ${fileInfo.fullPath} 有解析警告 (已忽略): ${warning.message} (行: ${warning.row + 2})`, 'warning', 'status');
+                    summary.warnings++;
+                });
+            }
+
+            if (!parseResult.data || parseResult.data.length === 0) { return []; }
+
+            let dataRows = parseResult.data;
+            if (dataRows[0]['編號']?.toLowerCase().includes('serial number')) { dataRows.shift(); }
+            const mapping = columnMappings[fileInfo.tableType];
+            if (!mapping) { throw new Error(`檔案 ${fileInfo.name} 找不到對應規則。`); }
+            return dataRows.map(row => processRow(row, mapping));
+        }
+
+        async function uploadMainFileWithSmartUpdate(fileInfo) {
+            try {
+                const tableName = `${fileInfo.countyCode}_lvr_land_${fileInfo.tableType}`;
+                const processedData = await parseFile(fileInfo);
+                if (!processedData || processedData.length === 0) {
+                    addLog(`${fileInfo.fullPath}: 檔案為空或無有效資料，已跳過`, 'warning', 'status');
+                    return;
+                }
+                const chunkSize = 500;
+                for (let i = 0; i < processedData.length; i += chunkSize) {
+                    const chunk = processedData.slice(i, i + chunkSize);
+                    const idsToCheck = chunk.map(row => row['編號']);
+                    const { data: existingData, error: fetchError } = await supabase.from(tableName).select('*').in('編號', idsToCheck);
+                    if (fetchError) throw fetchError;
+                    const existingDataMap = new Map(existingData.map(item => [item['編號'], item]));
+                    const newData = [];
+                    const updatedData = [];
+                    const idsToDelete = [];
+                    let identicalCount = 0;
+                    for (const newRecord of chunk) {
+                        const existingRecord = existingDataMap.get(newRecord['編號']);
+                        if (!existingRecord) {
+                            newData.push(newRecord);
+                        } else if (!isEqual(newRecord, existingRecord, fileInfo.tableType)) {
+                            idsToDelete.push(newRecord['編號']);
+                            updatedData.push(newRecord);
+                        } else {
+                            identicalCount++;
+                        }
+                    }
+                    addLog(`${fileInfo.fullPath} (區塊 ${Math.floor(i/chunkSize) + 1}): 新增 ${newData.length}, 更新 ${updatedData.length}, 跳過 ${identicalCount}`, 'info');
+                    summary.new += newData.length;
+                    summary.updated += updatedData.length;
+                    summary.identical += identicalCount;
+                    const idsToProcess = [...newData.map(r => r['編號']), ...updatedData.map(r => r['編號'])];
+                    idsToProcess.forEach(id => processedMainIds.add(id));
+                    if (idsToDelete.length > 0) {
+                        const { error: deleteError } = await supabase.from(tableName).delete().in('編號', idsToDelete);
+                        if (deleteError) throw deleteError;
+                    }
+                    const dataToUpload = [...newData, ...updatedData];
+                    if (dataToUpload.length > 0) {
+                        const { error: insertError } = await supabase.from(tableName).insert(dataToUpload);
+                        if (insertError) throw insertError;
+                    }
+                }
+            } catch (error) {
+                addLog(`${fileInfo.fullPath} 上傳失敗: ${error.message}`, 'error', 'error');
+                summary.errors++;
+            }
+        }
+
+        async function uploadSubFile(fileInfo) {
+            try {
+                const tableName = `${fileInfo.countyCode}_lvr_land_${fileInfo.tableType}`;
+                const allSubData = await parseFile(fileInfo);
+                if (!allSubData || allSubData.length === 0) {
+                    addLog(`${fileInfo.fullPath}: 檔案為空或無有效資料，已跳過`, 'warning', 'status');
+                    return;
+                }
+                const dataToUpload = allSubData.filter(row => processedMainIds.has(row['編號']));
+                if (dataToUpload.length > 0) {
+                    const { error } = await supabase.from(tableName).insert(dataToUpload);
+                    if (error) throw error;
+                    summary.subAdded += dataToUpload.length;
+                    addLog(`${fileInfo.fullPath}: 成功新增 ${dataToUpload.length} 筆關聯的附表紀錄`, 'success');
+                } else {
+                    addLog(`${fileInfo.fullPath}: 無對應的主表變更，已跳過`, 'info');
+                }
+            } catch (error) {
+                addLog(`${fileInfo.fullPath} 上傳失敗: ${error.message}`, 'error', 'error');
+                summary.errors++;
+            }
+        }
+
+
+        // --- 其他輔助函式 ---
+        function cleanNumber(value) {
+            if (typeof value !== 'string' && typeof value !== 'number') return null;
+            const cleaned = String(value).replace(/,/g, '');
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? null : num;
+        }
+        function rocToDate(rocDateStr) {
+            if (!rocDateStr || typeof rocDateStr !== 'string') return null;
+            const match = String(rocDateStr).match(/(\d{2,3})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/);
+            if (!match) return null;
+            try {
+                const rocYear = parseInt(match[1], 10);
+                const month = parseInt(match[2], 10);
+                const day = parseInt(match[3], 10);
+                if (isNaN(rocYear) || isNaN(month) || isNaN(day)) return null;
+                const adYear = rocYear + 1911;
+                const monthStr = String(month).padStart(2, '0');
+                const dayStr = String(day).padStart(2, '0');
+                const date = new Date(`${adYear}-${monthStr}-${dayStr}`);
+                if (isNaN(date.getTime()) || date.getDate() !== day) return null;
+                return `${adYear}-${monthStr}-${dayStr}`;
+            } catch (e) { return null; }
+        }
+        function chineseFloorToNumber(floorStr) {
+            if (!floorStr || typeof floorStr !== 'string') return null;
+            const s = String(floorStr).replace(/層|樓/g, '');
+            const charMap = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
+            if (!isNaN(s)) return parseInt(s, 10);
+            if (s === '地下') return -1;
+            let total = 0;
+            const parts = s.split('十');
+            if (parts.length === 2) {
+                const part0 = parts[0] ? (charMap[parts[0]] || 1) : 1;
+                const part1 = parts[1] ? (charMap[parts[1]] || 0) : 0;
+                total = part0 * 10 + part1;
+            } else if (s.includes('十')) {
+                total = 10;
+            } else {
+                total = charMap[s] || null;
+            }
+            return total > 0 ? total : null;
+        }
+        function processRow(row, mapping) {
+            const newRow = {};
+            const targetDbColumns = [...new Set(Object.values(mapping))];
+            targetDbColumns.forEach(col => newRow[col] = null);
+            for (const csvHeader in row) {
+                const dbColumn = mapping[csvHeader];
+                if (dbColumn) {
+                    let value = row[csvHeader];
+                    if (value === undefined || value === '') continue;
+                    if (dbColumn === '樓層' || dbColumn === '總樓層') {
+                        newRow[dbColumn] = chineseFloorToNumber(value);
+                    } else if (dbColumn.includes('日')) {
+                        newRow[dbColumn] = rocToDate(String(value));
+                    } else if (['交易總價', '車位總價', '房數', '廳數', '衛浴數', '持分分母', '持分分子', '交易屋齡', '車位價格'].includes(dbColumn)) {
+                        newRow[dbColumn] = parseInt(cleanNumber(value), 10);
+                        if(isNaN(newRow[dbColumn])) newRow[dbColumn] = null;
+                    } else if (dbColumn.includes('面積')) {
+                        newRow[dbColumn] = cleanNumber(value);
+                    } else {
+                        newRow[dbColumn] = String(value);
+                    }
+                }
+            }
+            return newRow;
+        }
+        function isEqual(objA, objB, tableType) {
+            const keysToCheck = Object.values(columnMappings[tableType]);
+            for (const key of keysToCheck) {
+                if (key === 'id') continue;
+                const valA = objA[key] ?? '';
+                const valB = objB[key] ?? '';
+                if (key.includes('面積')) {
+                    if (Math.abs(cleanNumber(valA) - cleanNumber(valB)) > 0.001) return false;
+                } else {
+                     if (String(valA) !== String(valB)) return false;
+                }
+            }
+            return true;
+        }
+        function updateConnectionStatus(isConnected) {
+            const statusClass = isConnected ? 'status-online' : 'status-offline';
+            const statusText = isConnected ? '已連線' : '未連線';
+            DOM.connectionStatus.className = `status-indicator ${statusClass}`;
+            DOM.connectionText.textContent = statusText;
+        }
+        function clearLogs(type) {
+            if (type === 'status') {
+                DOM.statusContainer.innerHTML = '<div class="text-gray-400">日誌已清除</div>';
+            } else {
+                DOM.errorLogContainer.innerHTML = '<div class="text-gray-400">無錯誤記錄</div>';
+            }
+        }
+        function resetUI() {
+            DOM.fileListContainer.classList.add('hidden');
+            DOM.statusContainer.innerHTML = '<div class="text-gray-400">等待操作...</div>';
+            DOM.errorLogContainer.innerHTML = '<div class="text-gray-400">無錯誤記錄</div>';
+            DOM.fileList.innerHTML = '';
+            DOM.startUploadButton.disabled = false;
+            DOM.selectFoldersButton.disabled = false;
+            allFiles = [];
+            processedMainIds.clear();
+            summary = { new: 0, updated: 0, identical: 0, subAdded: 0, errors: 0, warnings: 0 };
+            updateProgress(0, 0);
+        }
+        function updateProgress(current, total, phase = '') {
+            const percentage = total > 0 ? (current / total) * 100 : 0;
+            const circumference = 2 * Math.PI * 40;
+            const offset = circumference - (percentage / 100) * circumference;
+            DOM.progressCircle.style.strokeDashoffset = offset;
+            DOM.progressPercent.textContent = `${Math.round(percentage)}%`;
+            DOM.progressStatus.textContent = phase || `${current} / ${total}`;
+        }
+        async function testConnection() {
+            const supabaseUrl = document.getElementById('supabaseUrl').value;
+            const supabaseKey = document.getElementById('supabaseKey').value;
+            if (!supabaseUrl || !supabaseKey) {
+                addLog('請填寫完整的 Supabase URL 和 Service Role Key。', 'error', 'error');
+                return;
+            }
+            addLog('正在測試連線...', 'info');
+            try {
+                const testSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                const { error } = await testSupabase.from('county_codes').select('code', { count: 'exact', head: true });
+                if (error && error.code !== '42P01') throw error;
+                addLog('連線成功！', 'success');
+                updateConnectionStatus(true);
+                supabase = testSupabase;
+            } catch (error) {
+                addLog(`連線失敗: ${error.message}`, 'error', 'error');
+                updateConnectionStatus(false);
+            }
+        }
+
+        /**
+         * @NEW
+         * 顯示最終的統計總結報告
+         */
+        function displayFinalSummary() {
+            const summaryContent = `
+                <div class="space-y-1 text-sm font-mono p-2 border border-gray-700 rounded-md">
+                    <div><strong class="text-white">主表處理結果:</strong>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>新增紀錄: <span class="font-bold text-green-400">${summary.new}</span> 筆</li>
+                            <li>更新紀錄: <span class="font-bold text-yellow-400">${summary.updated}</span> 筆</li>
+                            <li>內容相同跳過: <span class="font-bold text-gray-400">${summary.identical}</span> 筆</li>
+                        </ul>
+                    </div>
+                    <div><strong class="text-white">附表處理結果:</strong>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>新增關聯紀錄: <span class="font-bold text-green-400">${summary.subAdded}</span> 筆</li>
+                        </ul>
+                    </div>
+                    <div class="pt-1 mt-1 border-t border-gray-700"><strong class="text-white">整體狀況:</strong>
+                        <ul class="list-disc list-inside pl-4">
+                            <li>解析警告 (已忽略): <span class="font-bold text-yellow-400">${summary.warnings}</span> 次</li>
+                            <li>上傳失敗檔案: <span class="font-bold text-red-400">${summary.errors}</span> 個</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            addLog('--- <strong>上傳結果總結</strong> ---', 'success');
+            addLog(summaryContent, 'info');
+        }
+
+        async function startUpload() {
+            if (!supabase) {
+                addLog('請先測試 Supabase 連線', 'error', 'error');
+                return;
+            }
+            if (allFiles.length === 0) {
+                addLog('請先選擇要上傳的檔案', 'error', 'error');
+                return;
+            }
+
+            isUploading = true;
+            DOM.startUploadButton.disabled = true;
+            DOM.selectFoldersButton.disabled = true;
+            // **修改點 1 (重複): 重置 summary 物件**
+            summary = { new: 0, updated: 0, identical: 0, subAdded: 0, errors: 0, warnings: 0 };
+            
+            const selectedType = document.querySelector('input[name="uploadType"]:checked').value;
+            const typeNameMap = { 'all': '全選', 'a': '中古', 'b': '預售', 'c': '租賃' };
+            let filesToUpload = allFiles;
+            if (selectedType !== 'all') {
+                filesToUpload = allFiles.filter(file => file.tableType.startsWith(selectedType));
+            }
+
+            if (filesToUpload.length === 0) {
+                addLog(`找不到符合「${typeNameMap[selectedType]}」類型的檔案，已中止上傳。`, 'warning', 'status');
+                DOM.startUploadButton.disabled = false;
+                DOM.selectFoldersButton.disabled = false;
+                isUploading = false;
+                return;
+            }
+            
+            addLog(`已選擇上傳類型: ${typeNameMap[selectedType]}。共 ${filesToUpload.length} 個檔案待處理。`, 'info');
+            const mainTables = filesToUpload.filter(f => f.isMain);
+            const subTables = filesToUpload.filter(f => !f.isMain);
+            
+            await processPhase(mainTables, '階段 1: 主表 (智慧更新)', true);
+            await processPhase(subTables, '階段 2: 附表 (智慧連動)', false);
+            
+            addLog('所有檔案處理完成！', 'success');
+            
+            // **修改點 3: 在所有任務結束後呼叫 displayFinalSummary**
+            displayFinalSummary();
+
+            DOM.selectFoldersButton.disabled = false;
+            isUploading = false;
+        }
+
+        async function processPhase(files, phaseName, isSmartUpdate) {
+            if (files.length === 0) {
+                addLog(`在 ${phaseName} 中沒有需要上傳的檔案，跳過此階段。`, 'info');
+                return;
+            }
+            addLog(`--- ${phaseName} ---`, 'info');
+            for (let i = 0; i < files.length; i++) {
+                const fileInfo = files[i];
+                updateProgress(i, files.length, phaseName);
+                DOM.currentFileName.textContent = fileInfo.fullPath;
+                if (isSmartUpdate) {
+                    await uploadMainFileWithSmartUpdate(fileInfo);
+                } else {
+                    await uploadSubFile(fileInfo);
+                }
+                updateProgress(i + 1, files.length, phaseName);
+            }
+            DOM.currentFileName.textContent = '';
+        }
+
+        function updateTime() {
+            DOM.currentTime.textContent = new Date().toLocaleTimeString();
+        }
+
+        // --- 事件監聽器與初始化 ---
+        DOM.selectFoldersButton.addEventListener('click', selectFolders);
+        DOM.startUploadButton.addEventListener('click', startUpload);
+        DOM.testConnectionButton.addEventListener('click', testConnection);
+
+        updateTime();
+        setInterval(updateTime, 1000);
+        updateConnectionStatus(false);
+    </script>
+</body>
+</html>
