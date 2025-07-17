@@ -1,5 +1,8 @@
-// js/app.js
-import { supabase, API_ENDPOINTS } from './modules/config.js';
+// js/app.js (已更新)
+
+// 從模組中引入設定與 Supabase Client
+import { supabase, API_ENDPOINTS, districtData, countyCodeMap } from './modules/config.js';
+
 // 認證輔助函數
 async function getAuthHeaders() {
     const { data: { session }, error } = await supabase.auth.getSession();
@@ -44,7 +47,6 @@ const dom = {
   rankingReportContent: document.getElementById('ranking-report-content'),
   metricCardsContainer: document.getElementById('metric-cards-container'),
   rankingTable: document.getElementById('ranking-table'),
-  // 【需求實作】為排名報告新增分頁容器
   rankingPaginationControls: document.createElement('div'),
   priceBandReportContent: document.getElementById('price-band-report-content'),
   priceBandTable: document.getElementById('price-band-table'),
@@ -104,7 +106,6 @@ let currentPage = 1, pageSize = 30, totalRecords = 0;
 let selectedDistricts = [], selectedProjects = [], suggestionDebounceTimer;
 let analysisDataCache = null; 
 let currentSort = { key: 'saleAmountSum', order: 'desc' };
-// 【需求實作】為排名報告新增狀態變數
 let rankingCurrentPage = 1, rankingPageSize = 15;
 let currentAverageType = 'arithmetic';
 let currentVelocityView = 'monthly';
@@ -113,10 +114,6 @@ let selectedPriceGridProject = null;
 let isHeatmapActive = false;
 let currentLegendFilter = { type: null, value: null };
 let areaHeatmapChart = null; 
-
-// Data
-const districtData = {"臺北市":["中正區","大同區","中山區","松山區","大安區","萬華區","信義區","士林區","北投區","內湖區","南港區","文山區"],"新北市":["板橋區","三重區","中和區","永和區","新莊區","新店區","樹林區","鶯歌區","三峽區","淡水區","汐止區","瑞芳區","土城區","蘆洲區","五股區","泰山區","林口區","深坑區","石碇區","坪林區","三芝區","石門區","八里區","平溪區","雙溪區","貢寮區","金山區","萬里區","烏來區"],"桃園市":["桃園區","中壢區","大溪區","楊梅區","蘆竹區","大園區","龜山區","八德區","龍潭區","平鎮區","新屋區","觀音區","復興區"],"臺中市":["中區","東區","南區","西區","北區","北屯區","西屯區","南屯區","太平區","大里區","霧峰區","烏日區","豐原區","后里區","石岡區","東勢區","和平區","新社區","潭子區","大雅區","神岡區","大肚區","沙鹿區","龍井區","梧棲區","清水區","大甲區","外埔區","大安區"],"臺南市":["中西區","東區","南區","北區","安平區","安南區","永康區","歸仁區","新化區","左鎮區","玉井區","楠西區","南化區","仁德區","關廟區","龍崎區","官田區","麻豆區","佳里區","西港區","七股區","將軍區","學甲區","北門區","新營區","後壁區","白河區","東山區","六甲區","下營區","柳營區","鹽水區","善化區","大內區","山上區","新市區","安定區"],"高雄市":["新興區","前金區","苓雅區","鹽埕區","鼓山區","旗津區","前鎮區","三民區","楠梓區","小港區","左營區","仁武區","大社區","岡山區","路竹區","阿蓮區","田寮區","燕巢區","橋頭區","梓官區","彌陀區","永安區","湖內區","鳳山區","大寮區","林園區","鳥松區","大樹區","旗山區","美濃區","六龜區","內門區","杉林區","甲仙區","桃源區","那瑪夏區","茂林區","茄萣區"],"基隆市":["仁愛區","信義區","中正區","中山區","安樂區","暖暖區","七堵區"],"新竹市":["東區","北區","香山區"],"嘉義市":["東區","西區"],"宜蘭縣":["宜蘭市","羅東鎮","蘇澳鎮","頭城鎮","礁溪鄉","壯圍鄉","員山鄉","冬山鄉","五結鄉","三星鄉","大同鄉","南澳鄉"],"新竹縣":["竹北市","竹東鎮","新埔鎮","關西鎮","湖口鄉","新豐鄉","芎林鄉","橫山鄉","北埔鄉","寶山鄉","峨眉鄉","尖石鄉","五峰鄉"],"苗栗縣":["苗栗市","苑裡鎮","通霄鎮","竹南鎮","頭份鎮","後龍鎮","卓蘭鎮","大湖鄉","公館鄉","銅鑼鄉","南庄鄉","頭屋鄉","三義鄉","西湖鄉","造橋鄉","三灣鄉","獅潭鄉","泰安鄉"],"彰化縣":["彰化市","鹿港鎮","和美鎮","線西鄉","伸港鄉","福興鄉","秀水鄉","花壇鄉","芬園鄉","員林鎮","溪湖鎮","田中鎮","大村鄉","埔鹽鄉","埔心鄉","永靖鄉","社頭鄉","二水鄉","北斗鎮","二林鎮","田尾鄉","埤頭鄉","芳苑鄉","大城鄉","竹塘鄉","溪州鄉"],"南投縣":["南投市","埔里鎮","草屯鎮","竹山鎮","集集鎮","名間鄉","鹿谷鄉","中寮鄉","魚池鄉","國姓鄉","水里鄉","信義鄉","仁愛鄉"],"雲林縣":["斗六市","斗南鎮","虎尾鎮","西螺鎮","土庫鎮","北港鎮","古坑鄉","大埤鄉","莿桐鄉","林內鄉","二崙鄉","崙背鄉","麥寮鄉","東勢鄉","褒忠鄉","台西鄉","元長鄉","四湖鄉","口湖鄉","水林鄉"],"嘉-E市":["東區","西區"],"花蓮縣":["花蓮市","鳳林鎮","玉里鎮","新城鄉","吉安鄉","壽豐鄉","光復鄉","豐濱鄉","瑞穗鄉","富里鄉","秀林鄉","萬榮鄉","卓溪鄉"],"臺東縣":["臺東市","成功鎮","關山鎮","卑南鄉","鹿野鄉","池上鄉","東河鄉","長濱鄉","太麻里鄉","大武鄉","綠島鄉","海端鄉","延平鄉","金峰鄉","達仁鄉","蘭嶼鄉"],"澎湖縣":["馬公市","湖西鄉","沙鄉","西嶼鄉","望安鄉","七美鄉"],"金門縣":["金城鎮","金湖鎮","金沙鎮","金寧鄉","烈嶼鄉","烏坵鄉"],"連江縣":["南竿鄉","北竿鄉","莒光鄉","東引鄉"]};
-const countyCodeMap = { "臺北市": "A", "新北市": "F", "桃園市": "H", "臺中市": "B", "臺南市": "D", "高雄市": "E", "基隆市": "C", "新竹市": "O", "嘉義市": "I", "新竹縣": "J", "苗栗縣": "K", "彰化縣": "N", "南投縣": "M", "雲林縣": "P", "嘉義縣": "Q", "屏東縣": "T", "宜蘭縣": "G", "花蓮縣": "U", "臺東縣": "V", "澎湖縣": "X", "金門縣": "W", "連江縣": "Z" };
 
 // --- Heatmap related functions ---
 const heatmapColorMapping = { high: { label: '高度溢價 (> 5%)', color: 'rgba(244, 63, 94, 0.5)' }, medium: { label: '中度溢價 (2-5%)', color: 'rgba(234, 179, 8, 0.4)' }, low: { label: '微幅溢價 (0-2%)', color: 'rgba(34, 197, 94, 0.3)' }, discount: { label: '建案折價 (< 0%)', color: 'rgba(139, 92, 246, 0.4)' }, };
@@ -277,7 +274,7 @@ async function handleShareClick(reportType) {
         } else {
             payload.date_config = { type: 'relative', value: dateRangeValue };
         }
-        const response = await fetch(GENERATE_SHARE_LINK_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+        const response = await fetch(API_ENDPOINTS.GENERATE_SHARE_LINK, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
         if (!response.ok) {
             const err = await response.json().catch(() => ({ error: '產生分享連結失敗，伺服器未提供詳細資訊' }));
             throw new Error(err.error);
@@ -325,7 +322,6 @@ function initialize() {
         return;
     }
     
-    // 【需求實作】將排名分頁容器加入DOM
     dom.rankingPaginationControls.id = 'ranking-pagination-controls';
     dom.rankingPaginationControls.className = 'flex justify-between items-center mt-4 text-sm text-gray-400';
     dom.rankingReportContent.querySelector('.overflow-x-auto').insertAdjacentElement('afterend', dom.rankingPaginationControls);
@@ -382,7 +378,6 @@ function initialize() {
             currentSort.key = sortKey; 
             currentSort.order = 'desc'; 
         } 
-        // 【需求實作】排序後回到第一頁
         rankingCurrentPage = 1;
         renderRankingReport(); 
     });
@@ -548,7 +543,7 @@ async function analyzeData() {
     try {
         const headers = await getAuthHeaders();
         if (!headers) return;
-        const response = await fetch(RANKING_ANALYSIS_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ filters: getFilters() }) });
+        const response = await fetch(API_ENDPOINTS.RANKING_ANALYSIS, { method: 'POST', headers: headers, body: JSON.stringify({ filters: getFilters() }) });
         if (!response.ok) {
             const err = await response.json().catch(() => ({ error: `分析請求失敗: ${response.status}` }));
             throw new Error(err.error);
@@ -563,7 +558,6 @@ async function analyzeData() {
         dom.tabsContainer.classList.remove('hidden');
         document.querySelectorAll('.report-header').forEach(el => { el.style.display = 'block'; });
         currentSort = { key: 'saleAmountSum', order: 'desc' };
-        // 【需求實作】分析後將排名頁面重設為1
         rankingCurrentPage = 1;
         renderRankingReport();
         renderPriceBandReport();
@@ -584,7 +578,7 @@ async function fetchData() {
     try {
         const headers = await getAuthHeaders();
         if (!headers) return;
-        const response = await fetch(EDGE_FUNCTION_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify({ filters: getFilters(), pagination: { page: currentPage, limit: pageSize } }) });
+        const response = await fetch(API_ENDPOINTS.QUERY_DATA, { method: 'POST', headers: headers, body: JSON.stringify({ filters: getFilters(), pagination: { page: currentPage, limit: pageSize } }) });
         if (!response.ok) {
             const err = await response.json().catch(() => ({ error: '無法解析伺服器回應' }));
             throw new Error(err.error);
@@ -617,43 +611,34 @@ function formatNumber(num, decimals = 2) {
 function renderRankingReport() {
     if (!analysisDataCache || !analysisDataCache.coreMetrics) return;
     
-    // 【需求實作】從快取中取得完整的排名資料
     const { coreMetrics, projectRanking } = analysisDataCache;
     
-    // 指標卡片
     dom.metricCardsContainer.innerHTML = `<div class="metric-card"><div class="metric-card-title">市場去化總銷售金額</div><div><span class="metric-card-value">${formatNumber(coreMetrics.totalSaleAmount, 0)}</span><span class="metric-card-unit">萬</span></div></div><div class="metric-card"><div class="metric-card-title">總銷去化房屋坪數</div><div><span class="metric-card-value">${formatNumber(coreMetrics.totalHouseArea, 2)}</span><span class="metric-card-unit">坪</span></div></div><div class="metric-card"><div class="metric-card-title">總平均單價</div><div><span class="metric-card-value">${formatNumber(coreMetrics.overallAveragePrice, 2)}</span><span class="metric-card-unit">萬/坪</span></div></div><div class="metric-card"><div class="metric-card-title">總交易筆數</div><div><span class="metric-card-value">${coreMetrics.transactionCount.toLocaleString()}</span><span class="metric-card-unit">筆</span></div></div>`;
     
-    // 排序
     projectRanking.sort((a, b) => {
         const valA = a[currentSort.key];
         const valB = b[currentSort.key];
         return currentSort.order === 'desc' ? valB - valA : valA - valB;
     });
 
-    // 【需求實作】根據當前頁碼取得要顯示的資料
     const pagedData = projectRanking.slice((rankingCurrentPage - 1) * rankingPageSize, rankingCurrentPage * rankingPageSize);
     
-    // 表頭
     const tableHeaders = [{ key: 'rank', label: '排名', sortable: false },{ key: 'projectName', label: '建案名稱', sortable: false },{ key: 'saleAmountSum', label: '交易總價(萬)', sortable: true },{ key: 'houseAreaSum', label: '房屋面積(坪)', sortable: true },{ key: 'transactionCount', label: '資料筆數', sortable: true },{ key: 'marketShare', label: '市場佔比(%)', sortable: true },{ key: 'averagePrice', label: '平均單價(萬)', sortable: true },{ key: 'minPrice', label: '最低單價(萬)', sortable: true },{ key: 'maxPrice', label: '最高單價(萬)', sortable: true },{ key: 'medianPrice', label: '單價中位數(萬)', sortable: true },{ key: 'avgParkingPrice', label: '車位平均單價', sortable: true }];
     let headerHtml = '<thead><tr>';
     tableHeaders.forEach(h => { if (h.sortable) { const sortClass = currentSort.key === h.key ? currentSort.order : ''; headerHtml += `<th class="sortable-th ${sortClass}" data-sort-key="${h.key}">${h.label}<span class="sort-icon">▼</span></th>`; } else { headerHtml += `<th>${h.label}</th>`; } });
     headerHtml += '</tr></thead>';
     
-    // 表身
     let bodyHtml = '<tbody>';
     pagedData.forEach((proj, index) => { 
-        // 【需求實作】計算正確的排名數字
         const rankNumber = (rankingCurrentPage - 1) * rankingPageSize + index + 1;
         bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${rankNumber}</td><td>${proj.projectName}</td><td>${formatNumber(proj.saleAmountSum, 0)}</td><td>${formatNumber(proj.houseAreaSum)}</td><td>${proj.transactionCount.toLocaleString()}</td><td>${formatNumber(proj.marketShare)}%</td><td>${formatNumber(proj.averagePrice)}</td><td>${formatNumber(proj.minPrice)}</td><td>${formatNumber(proj.maxPrice)}</td><td>${formatNumber(proj.medianPrice)}</td><td>${formatNumber(proj.avgParkingPrice, 0)}</td></tr>`; 
     });
     bodyHtml += '</tbody>';
     
-    // 表尾
     let footerHtml = `<tfoot class="bg-dark-card font-bold"><tr class="border-t-2 border-gray-600"><td colspan="2">總計</td><td>${formatNumber(coreMetrics.totalSaleAmount, 0)}</td><td>${formatNumber(coreMetrics.totalHouseArea)}</td><td>${coreMetrics.transactionCount.toLocaleString()}</td><td colspan="6"></td></tr></tfoot>`;
     
     dom.rankingTable.innerHTML = headerHtml + bodyHtml + footerHtml;
 
-    // 【需求實作】渲染排名報告的分頁控制器
     renderRankingPagination(projectRanking.length);
 }
 
@@ -1146,7 +1131,7 @@ async function showSubTableDetails(btn) {
         const headers = await getAuthHeaders();
         if (!headers) throw new Error("認證失敗，請重新登入。");
         
-        const response = await fetch(SUB_DATA_ENDPOINT, {
+        const response = await fetch(API_ENDPOINTS.SUB_DATA, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ id, type, county })
@@ -1167,7 +1152,6 @@ async function showSubTableDetails(btn) {
     }
 }
 
-// 【需求實作】全新的分頁渲染函式
 function renderPagination() {
     createPaginationControls(dom.paginationControls, totalRecords, currentPage, pageSize, (page) => {
         currentPage = page;
@@ -1175,7 +1159,6 @@ function renderPagination() {
     });
 }
 
-// 【需求實作】為排名報告新增的分頁渲染函式
 function renderRankingPagination(totalItems) {
     createPaginationControls(dom.rankingPaginationControls, totalItems, rankingCurrentPage, rankingPageSize, (page) => {
         rankingCurrentPage = page;
@@ -1183,7 +1166,6 @@ function renderRankingPagination(totalItems) {
     });
 }
 
-// 【需求實作】可共用的分頁控制器產生器
 function createPaginationControls(container, totalItems, currentPage, pageSize, onPageChange) {
     container.innerHTML = '';
     if (totalItems === 0) {
@@ -1194,10 +1176,8 @@ function createPaginationControls(container, totalItems, currentPage, pageSize, 
     const totalPages = Math.ceil(totalItems / pageSize);
     let paginationHtml = `<div class="flex-1">共 ${totalItems} 筆資料</div><div class="flex items-center space-x-1">`;
     
-    // 上一頁按鈕
     paginationHtml += `<button class="pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
 
-    // 產生頁碼
     let startPage, endPage;
     if (totalPages <= 9) {
         startPage = 1;
@@ -1234,7 +1214,6 @@ function createPaginationControls(container, totalItems, currentPage, pageSize, 
         paginationHtml += `<button class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
     }
 
-    // 下一頁按鈕
     paginationHtml += `<button class="pagination-btn" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>&raquo;</button>`;
     paginationHtml += '</div>';
     
@@ -1249,7 +1228,6 @@ function createPaginationControls(container, totalItems, currentPage, pageSize, 
         });
     });
 
-    // 為分頁按鈕加入新的 CSS 樣式
     const style = document.createElement('style');
     style.textContent = `
         .pagination-btn { background-color: #374151; color: #d1d5db; font-weight: 500; border: none; padding: 0.5rem 0.75rem; border-radius: 0.375rem; cursor: pointer; transition: all 0.2s; }
@@ -1260,7 +1238,6 @@ function createPaginationControls(container, totalItems, currentPage, pageSize, 
     `;
     document.head.appendChild(style);
 }
-
 
 function renderSubTable(title, records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
@@ -1406,7 +1383,7 @@ async function fetchProjectNameSuggestions(query) {
         dom.filterCard.classList.add('z-elevate-filters');
         const processedQuery = query.trim().split(/\s+/).join('%');
         const payload = { countyCode, query: processedQuery, districts: selectedDistricts };
-        const response = await fetch(PROJECT_NAMES_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+        const response = await fetch(API_ENDPOINTS.PROJECT_NAMES, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
         if (!response.ok) throw new Error(`伺服器錯誤: ${response.status}`);
         const names = await response.json();
         renderSuggestions(names);
