@@ -1,16 +1,5 @@
-// Supabase Client 初始化
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const SUPABASE_URL = 'https://zxbmbbfrzbtuueysicoc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4Ym1iYmZyemJ0dXVleXNpY29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODg5ODksImV4cCI6MjA2NjI2NDk4OX0.1IUynv5eK1xF_3pb-oasqaTrPvbeAOC4Sc1oykPBy4M';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// API Endpoints
-const EDGE_FUNCTION_ENDPOINT = 'https://zxbmbbfrzbtuueysicoc.supabase.co/functions/v1/query-data';
-const SUB_DATA_ENDPOINT = 'https://zxbmbbfrzbtuueysicoc.supabase.co/functions/v1/query-sub-data';
-const PROJECT_NAMES_ENDPOINT = 'https://zxbmbbfrzbtuueysicoc.supabase.co/functions/v1/query-names';
-const RANKING_ANALYSIS_ENDPOINT = 'https://zxbmbbfrzbtuueysicoc.supabase.co/functions/v1/analyze-project-ranking';
-const GENERATE_SHARE_LINK_ENDPOINT = 'https://zxbmbbfrzbtuueysicoc.supabase.co/functions/v1/generate-share-link';
-
+// js/app.js
+import { supabase, API_ENDPOINTS } from './modules/config.js';
 // 認證輔助函數
 async function getAuthHeaders() {
     const { data: { session }, error } = await supabase.auth.getSession();
