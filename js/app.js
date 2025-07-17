@@ -1,85 +1,10 @@
-// js/app.js (已拆分 api.js)
+// js/app.js (已拆分 dom.js 和 ui.js)
 
 // 從模組中引入
-import { supabase, API_ENDPOINTS, districtData, countyCodeMap } from './modules/config.js';
-import * as api from './modules/api.js'; // 引入所有 api 模組的函式
-
-// DOM Elements
-const dom = {
-  countySelect: document.getElementById('county'),
-  filterCard: document.getElementById('filter-card'),
-  districtFilterWrapper: document.getElementById('district-filter-wrapper'),
-  districtContainer: document.getElementById('district-container'),
-  districtInputArea: document.getElementById('district-input-area'),
-  districtSuggestions: document.getElementById('district-suggestions'),
-  clearDistrictsBtn: document.getElementById('clear-districts-btn'),
-  projectFilterWrapper: document.getElementById('project-filter-wrapper'),
-  typeSelect: document.getElementById('type'),
-  buildingTypeSelect: document.getElementById('building-type'),
-  dateRangeSelect: document.getElementById('date-range'),
-  dateStartInput: document.getElementById('date-start'),
-  dateEndInput: document.getElementById('date-end'),
-  setTodayBtn: document.getElementById('set-today-btn'),
-  searchBtn: document.getElementById('search-btn'),
-  analyzeBtn: document.getElementById('analyze-btn'),
-  messageArea: document.getElementById('message-area'),
-  tabsContainer: document.getElementById('tabs-container'),
-  rankingReportContent: document.getElementById('ranking-report-content'),
-  metricCardsContainer: document.getElementById('metric-cards-container'),
-  rankingTable: document.getElementById('ranking-table'),
-  rankingPaginationControls: document.createElement('div'),
-  priceBandReportContent: document.getElementById('price-band-report-content'),
-  priceBandTable: document.getElementById('price-band-table'),
-  unitPriceReportContent: document.getElementById('unit-price-report-content'),
-  residentialStatsTableContainer: document.getElementById('residential-stats-table-container'),
-  residentialStatsExtraInfo: document.getElementById('residential-stats-extra-info'),
-  typeComparisonTableContainer: document.getElementById('type-comparison-table-container'),
-  parkingReportContent: document.getElementById('parking-report-content'),
-  parkingRatioTableContainer: document.getElementById('parking-ratio-table-container'),
-  avgPriceByTypeTableContainer: document.getElementById('avg-price-by-type-table-container'),
-  rampPlanePriceByFloorTableContainer: document.getElementById('ramp-plane-price-by-floor-table-container'),
-  velocityReportContent: document.getElementById('velocity-report-content'),
-  velocityRoomFilterContainer: document.getElementById('velocity-room-filter-container'),
-  velocitySubTabsContainer: document.getElementById('velocity-sub-tabs-container'),
-  velocityTableContainer: document.getElementById('velocity-table-container'),
-  priceGridReportContent: document.getElementById('price-grid-report-content'),
-  unitColorLegendContainer: document.getElementById('unit-color-legend-container'),
-  horizontalPriceGridContainer: document.getElementById('horizontal-price-grid-container'),
-  priceGridProjectFilterContainer: document.getElementById('price-grid-project-filter-container'),
-  dataListContent: document.getElementById('data-list-content'),
-  resultsTable: document.getElementById('results-table'),
-  paginationControls: document.getElementById('pagination-controls'),
-  modal: document.getElementById('details-modal'),
-  modalTitle: document.getElementById('modal-title'),
-  modalContent: document.getElementById('modal-content'),
-  modalCloseBtn: document.getElementById('modal-close-btn'),
-  projectNameContainer: document.getElementById('project-name-container'),
-  projectNameInput: document.getElementById('project-name-input'),
-  projectNameSuggestions: document.getElementById('project-name-suggestions'),
-  clearProjectsBtn: document.getElementById('clear-projects-btn'),
-  avgTypeToggle: document.getElementById('avg-type-toggle'),
-  analyzeHeatmapBtn: document.getElementById('analyze-heatmap-btn'),
-  backToGridBtn: document.getElementById('back-to-grid-btn'),
-  floorPremiumInput: document.getElementById('floor-premium-input'),
-  heatmapInfoContainer: document.getElementById('heatmap-info-container'),
-  heatmapLegendContainer: document.getElementById('heatmap-legend-container'),
-  heatmapColorLegend: document.getElementById('heatmap-color-legend'),
-  heatmapIconLegend: document.getElementById('heatmap-icon-legend'),
-  heatmapSummaryTableContainer: document.getElementById('heatmap-summary-table-container'),
-  heatmapHorizontalComparisonTableContainer: document.getElementById('heatmap-horizontal-comparison-table-container'),
-  sharePriceGridBtn: document.getElementById('share-price-grid-btn'),
-  shareModal: document.getElementById('share-modal'),
-  shareModalTitle: document.getElementById('share-modal-title'),
-  shareModalContent: document.getElementById('share-modal-content'),
-  shareModalCloseBtn: document.getElementById('share-modal-close-btn'),
-  shareUrlInput: document.getElementById('share-url-input'),
-  copyShareUrlBtn: document.getElementById('copy-share-url-btn'),
-  copyFeedback: document.getElementById('copy-feedback'),
-  areaHeatmapChart: document.getElementById('area-heatmap-chart'),
-  heatmapIntervalInput: document.getElementById('heatmap-interval-input'),
-  heatmapIntervalIncrementBtn: document.getElementById('heatmap-interval-increment'),
-  heatmapIntervalDecrementBtn: document.getElementById('heatmap-interval-decrement'),
-};
+import { districtData, countyCodeMap } from './modules/config.js';
+import * as api from './modules/api.js';
+import { dom } from './modules/dom.js';
+import * as ui from './modules/ui.js';
 
 // State variables
 let currentPage = 1, pageSize = 30, totalRecords = 0;
@@ -168,7 +93,7 @@ function renderPriceGapHeatmap() {
                     let bgColor = getHeatmapColor(premium);
                     
                     let formattedTooltip = '';
-                    const baseInfo = `交易總價: ${formatNumber(tooltipInfo.totalPrice, 0)} 萬\n房屋總價: ${formatNumber(tooltipInfo.housePrice, 0)} 萬\n車位總價: ${formatNumber(tooltipInfo.parkingPrice, 0)} 萬\n房屋面積: ${formatNumber(tooltipInfo.houseArea, 2)} 坪\n房間數: ${tooltipInfo.rooms || '-'} 房`;
+                    const baseInfo = `交易總價: ${ui.formatNumber(tooltipInfo.totalPrice, 0)} 萬\n房屋總價: ${ui.formatNumber(tooltipInfo.housePrice, 0)} 萬\n車位總價: ${ui.formatNumber(tooltipInfo.parkingPrice, 0)} 萬\n房屋面積: ${ui.formatNumber(tooltipInfo.houseArea, 2)} 坪\n房間數: ${tooltipInfo.rooms || '-'} 房`;
 
                     if (premium === 0) {
                         specialType = 'anchor';
@@ -191,7 +116,7 @@ function renderPriceGapHeatmap() {
                             iconHtml = `<span class="has-tooltip" data-tooltip="${specialLabel}: ${remarkText}">${specialTypeMapping[specialType].icon}</span> `;
                         }
 
-                        const premiumLine = `調價幅度: ${formatNumber(premium, 2)} %`;
+                        const premiumLine = `調價幅度: ${ui.formatNumber(premium, 2)} %`;
 
                         if (specialLabel) {
                             formattedTooltip = `${specialLabel}\n${premiumLine}\n--------------------\n${baseInfo}`;
@@ -218,8 +143,8 @@ function renderPriceGapHeatmap() {
     dom.heatmapHorizontalComparisonTableContainer.classList.remove('hidden');
 }
 
-function renderHeatmapSummaryTable(summary) { if (!summary || summary.transactionCount === 0) { dom.heatmapSummaryTableContainer.innerHTML = ''; return; } const { totalBaselineHousePrice, totalPricePremiumValue, totalSoldArea } = summary; const premiumPercentage = (totalPricePremiumValue / totalBaselineHousePrice) * 100; const avgPriceAdjustment = totalPricePremiumValue / totalSoldArea; const formatValue = (value, unit = '', decimals = 2) => { const num = formatNumber(value, decimals); return value > 0 ? `<span class="summary-value-positive">+${num} ${unit}</span>` : `<span class="summary-value-negative">${num} ${unit}</span>`; }; const tableHtml = ` <h3 class="report-section-title mt-8">調價幅度統計摘要 (排除店舖)</h3> <div class="overflow-x-auto"> <table class="min-w-full summary-table"> <thead> <tr> <th>基準房屋總價</th> <th>調價幅度總額</th> <th>總溢價率</th> <th>已售房屋坪數</th> <th>平均單價調價</th> </tr> </thead> <tbody> <tr> <td>${formatNumber(totalBaselineHousePrice, 0)} 萬</td> <td>${formatValue(totalPricePremiumValue, '萬', 0)}</td> <td>${formatValue(premiumPercentage, '%')}</td> <td>${formatNumber(totalSoldArea)} 坪</td> <td>${formatValue(avgPriceAdjustment, '萬/坪')}</td> </tr> </tbody> </table> </div> `; dom.heatmapSummaryTableContainer.innerHTML = tableHtml; }
-function renderHorizontalComparisonTable(projectData) { if (!projectData || !projectData.horizontalComparison || projectData.horizontalComparison.length === 0) { dom.heatmapHorizontalComparisonTableContainer.innerHTML = ''; return; } const { horizontalComparison, refFloorForComparison } = projectData; const formatValue = (value, unit = '', decimals = 2, addSign = false) => { if (typeof value !== 'number' || isNaN(value)) return '-'; const num = formatNumber(value, decimals); if (addSign) { return value > 0 ? `<span class="summary-value-positive">+${num} ${unit}</span>` : value < 0 ? `<span class="summary-value-negative">${num} ${unit}</span>` : `<span>${num} ${unit}</span>`; } return (unit === '%') ? num + unit : num + ' ' + unit; }; const tableHtml = ` <h3 class="report-section-title mt-8">戶型水平價差與溢價貢獻 (基準樓層: F${refFloorForComparison || 'N/A'})</h3> <p class="text-sm text-gray-500 mt-2 mb-4">* 水平價差是將各戶型基準價換算至共同基準樓層後的價差，以最低價戶型為 0 基準。</p> <div class="overflow-x-auto"> <table class="min-w-full summary-table"> <thead> <tr> <th>戶型</th> <th>基準戶 (樓/價)</th> <th>水平價差(萬/坪)</th> <th>去化戶數</th> <th>溢價貢獻</th> <th>貢獻佔比</th> <th>基準房屋總價</th> <th>平均單價調價</th> </tr> </thead> <tbody> ${horizontalComparison.map(item => ` <tr> <td>${item.unitType}</td> <td>${item.anchorInfo}</td> <td>${formatValue(item.horizontalPriceDiff, '萬/坪', 2, true)}</td> <td>${item.unitsSold.toLocaleString()} 戶</td> <td>${formatValue(item.timePremiumContribution, '萬', 0, true)}</td> <td>${formatValue(item.contributionPercentage, '%')}</td> <td>${formatNumber(item.baselineHousePrice, 0)} 萬</td> <td>${formatValue(item.avgPriceAdjustment, '萬/坪', 2, true)}</td> </tr> `).join('')} </tbody> </table> </div> `; dom.heatmapHorizontalComparisonTableContainer.innerHTML = tableHtml; }
+function renderHeatmapSummaryTable(summary) { if (!summary || summary.transactionCount === 0) { dom.heatmapSummaryTableContainer.innerHTML = ''; return; } const { totalBaselineHousePrice, totalPricePremiumValue, totalSoldArea } = summary; const premiumPercentage = (totalPricePremiumValue / totalBaselineHousePrice) * 100; const avgPriceAdjustment = totalPricePremiumValue / totalSoldArea; const formatValue = (value, unit = '', decimals = 2) => { const num = ui.formatNumber(value, decimals); return value > 0 ? `<span class="summary-value-positive">+${num} ${unit}</span>` : `<span class="summary-value-negative">${num} ${unit}</span>`; }; const tableHtml = ` <h3 class="report-section-title mt-8">調價幅度統計摘要 (排除店舖)</h3> <div class="overflow-x-auto"> <table class="min-w-full summary-table"> <thead> <tr> <th>基準房屋總價</th> <th>調價幅度總額</th> <th>總溢價率</th> <th>已售房屋坪數</th> <th>平均單價調價</th> </tr> </thead> <tbody> <tr> <td>${ui.formatNumber(totalBaselineHousePrice, 0)} 萬</td> <td>${formatValue(totalPricePremiumValue, '萬', 0)}</td> <td>${formatValue(premiumPercentage, '%')}</td> <td>${ui.formatNumber(totalSoldArea)} 坪</td> <td>${formatValue(avgPriceAdjustment, '萬/坪')}</td> </tr> </tbody> </table> </div> `; dom.heatmapSummaryTableContainer.innerHTML = tableHtml; }
+function renderHorizontalComparisonTable(projectData) { if (!projectData || !projectData.horizontalComparison || projectData.horizontalComparison.length === 0) { dom.heatmapHorizontalComparisonTableContainer.innerHTML = ''; return; } const { horizontalComparison, refFloorForComparison } = projectData; const formatValue = (value, unit = '', decimals = 2, addSign = false) => { if (typeof value !== 'number' || isNaN(value)) return '-'; const num = ui.formatNumber(value, decimals); if (addSign) { return value > 0 ? `<span class="summary-value-positive">+${num} ${unit}</span>` : value < 0 ? `<span class="summary-value-negative">${num} ${unit}</span>` : `<span>${num} ${unit}</span>`; } return (unit === '%') ? num + unit : num + ' ' + unit; }; const tableHtml = ` <h3 class="report-section-title mt-8">戶型水平價差與溢價貢獻 (基準樓層: F${refFloorForComparison || 'N/A'})</h3> <p class="text-sm text-gray-500 mt-2 mb-4">* 水平價差是將各戶型基準價換算至共同基準樓層後的價差，以最低價戶型為 0 基準。</p> <div class="overflow-x-auto"> <table class="min-w-full summary-table"> <thead> <tr> <th>戶型</th> <th>基準戶 (樓/價)</th> <th>水平價差(萬/坪)</th> <th>去化戶數</th> <th>溢價貢獻</th> <th>貢獻佔比</th> <th>基準房屋總價</th> <th>平均單價調價</th> </tr> </thead> <tbody> ${horizontalComparison.map(item => ` <tr> <td>${item.unitType}</td> <td>${item.anchorInfo}</td> <td>${formatValue(item.horizontalPriceDiff, '萬/坪', 2, true)}</td> <td>${item.unitsSold.toLocaleString()} 戶</td> <td>${formatValue(item.timePremiumContribution, '萬', 0, true)}</td> <td>${formatValue(item.contributionPercentage, '%')}</td> <td>${ui.formatNumber(item.baselineHousePrice, 0)} 萬</td> <td>${formatValue(item.avgPriceAdjustment, '萬/坪', 2, true)}</td> </tr> `).join('')} </tbody> </table> </div> `; dom.heatmapHorizontalComparisonTableContainer.innerHTML = tableHtml; }
 
 async function handleShareClick(reportType) {
     const btnIdMapping = { 'price_grid': 'sharePriceGridBtn' };
@@ -285,7 +210,7 @@ function getFilters() {
 function initialize() {
     if (!dom.countySelect) {
         console.error("錯誤：無法找到縣市選單元素(ID='county')。請檢查 HTML 的 ID 是否正確。");
-        showMessage("系統初始化失敗：找不到縣市選單。", true);
+        ui.showMessage("系統初始化失敗：找不到縣市選單。", true);
         return;
     }
     api.checkAuth();
@@ -300,7 +225,7 @@ function initialize() {
         });
     } catch (error) {
         console.error("填入縣市資料時發生錯誤:", error);
-        showMessage("系統初始化失敗：載入縣市資料時出錯。", true);
+        ui.showMessage("系統初始化失敗：載入縣市資料時出錯。", true);
         return;
     }
     
@@ -319,7 +244,7 @@ function initialize() {
     dom.dateStartInput.addEventListener('input', () => { if (document.activeElement === dom.dateStartInput) dom.dateRangeSelect.value = 'custom'; });
     dom.dateEndInput.addEventListener('input', () => { if (document.activeElement === dom.dateEndInput) dom.dateRangeSelect.value = 'custom'; });
     dom.setTodayBtn.addEventListener('click', () => {
-        dom.dateEndInput.value = formatDate(new Date());
+        dom.dateEndInput.value = ui.formatDate(new Date());
         dom.dateRangeSelect.value = 'custom';
     });
     dom.modalCloseBtn.addEventListener('click', () => dom.modal.classList.add('hidden'));
@@ -349,7 +274,15 @@ function initialize() {
     });
 
     dom.clearProjectsBtn.addEventListener('click', clearSelectedProjects);
-    dom.tabsContainer.addEventListener('click', e => { if (e.target.matches('.tab-button')) switchTab(e.target.dataset.tab); });
+    dom.tabsContainer.addEventListener('click', e => { 
+        if (e.target.matches('.tab-button')) {
+            const tabId = e.target.dataset.tab;
+            ui.switchTab(tabId);
+            if (tabId === 'velocity-report' && analysisDataCache) {
+                renderAreaHeatmap();
+            }
+        }
+    });
     dom.rankingTable.addEventListener('click', e => { 
         const header = e.target.closest('.sortable-th'); 
         if (!header) return; 
@@ -420,7 +353,7 @@ async function analyzeHeatmap() {
         dom.backToGridBtn.classList.remove('hidden');
     } catch (error) {
         console.error("熱力圖分析失敗:", error);
-        showMessage(`熱力圖分析失敗: ${error.message}`, true);
+        ui.showMessage(`熱力圖分析失敗: ${error.message}`, true);
         isHeatmapActive = false;
         dom.heatmapInfoContainer.classList.add('hidden');
         dom.heatmapSummaryTableContainer.classList.add('hidden');
@@ -450,40 +383,6 @@ function switchAverageType(type) {
     if (analysisDataCache) { renderUnitPriceReport(); }
 }
 
-function switchTab(targetTab) {
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
-    const contentEl = document.getElementById(`${targetTab}-content`);
-    const buttonEl = document.querySelector(`button[data-tab="${targetTab}"]`);
-    if(contentEl) contentEl.classList.add('active');
-    if(buttonEl) buttonEl.classList.add('active');
-
-    if (targetTab === 'velocity-report' && analysisDataCache) {
-        renderAreaHeatmap();
-    }
-}
-
-function showLoading(message) {
-    dom.messageArea.innerHTML = `<div class="loader mx-auto"></div><p class="mt-4">${message}</p>`;
-    dom.messageArea.classList.remove('hidden');
-    dom.tabsContainer.classList.add('hidden');
-    document.querySelectorAll('.report-header').forEach(el => el.style.display = 'none');
-    ['ranking-report-content', 'price-band-report-content', 'unit-price-report-content', 'parking-report-content', 'velocity-report-content', 'price-grid-report-content', 'data-list-content'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.remove('active');
-    });
-}
-
-function showMessage(message, isError = false) {
-    const messageClass = isError ? 'bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg' : '';
-    dom.messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
-    dom.messageArea.classList.remove('hidden');
-    dom.tabsContainer.classList.add('hidden');
-    document.querySelectorAll('.report-header').forEach(el => el.style.display = 'none');
-}
-
-function formatDate(date) { return date.toISOString().split('T')[0]; }
-
 function handleDateRangeChange() {
     const value = dom.dateRangeSelect.value;
     if (value === 'custom') return;
@@ -498,20 +397,19 @@ function handleDateRangeChange() {
         case 'last_2_years': startDate = new Date(endDate.getFullYear() - 1, 0, 1); break;
         case 'last_3_years': startDate = new Date(endDate.getFullYear() - 2, 0, 1); break;
     }
-    dom.dateStartInput.value = formatDate(startDate);
-    dom.dateEndInput.value = formatDate(endDate);
+    dom.dateStartInput.value = ui.formatDate(startDate);
+    dom.dateEndInput.value = ui.formatDate(endDate);
 }
 
-// Main data fetching and analysis functions (orchestrators)
 async function mainAnalyzeData() {
-    if (!dom.countySelect.value) return showMessage('請先選擇一個縣市再進行分析。');
-    showLoading('分析中，請稍候...');
+    if (!dom.countySelect.value) return ui.showMessage('請先選擇一個縣市再進行分析。');
+    ui.showLoading('分析中，請稍候...');
     try {
         analysisDataCache = await api.analyzeData(getFilters());
 
         if (!analysisDataCache.coreMetrics || analysisDataCache.projectRanking.length === 0) {
             const msg = analysisDataCache.message || '找不到符合條件的分析資料。';
-            showMessage(msg);
+            ui.showMessage(msg);
             return;
         }
         dom.messageArea.classList.add('hidden');
@@ -525,16 +423,16 @@ async function mainAnalyzeData() {
         renderParkingAnalysisReport();
         renderSalesVelocityReport();
         renderPriceGridAnalysis();
-        switchTab('ranking-report');
+        ui.switchTab('ranking-report');
     } catch(error) {
         console.error("數據分析失敗:", error);
-        showMessage(`數據分析失敗: ${error.message}`, true);
+        ui.showMessage(`數據分析失敗: ${error.message}`, true);
         analysisDataCache = null;
     }
 }
 
 async function mainFetchData() {
-    showLoading('查詢中，請稍候...');
+    ui.showLoading('查詢中，請稍候...');
     try {
         const filters = getFilters();
         const pagination = { page: currentPage, limit: pageSize };
@@ -542,7 +440,7 @@ async function mainFetchData() {
         
         totalRecords = result.count || 0;
         if (!result.data || result.data.length === 0) {
-            showMessage('找不到符合條件的資料。');
+            ui.showMessage('找不到符合條件的資料。');
             renderPagination();
             return;
         }
@@ -550,10 +448,10 @@ async function mainFetchData() {
         renderPagination();
         dom.messageArea.classList.add('hidden');
         dom.tabsContainer.classList.remove('hidden');
-        switchTab('data-list');
+        ui.switchTab('data-list');
     } catch (error) {
         console.error('查詢錯誤:', error);
-        showMessage(`查詢錯誤: ${error.message}`, true);
+        ui.showMessage(`查詢錯誤: ${error.message}`, true);
         totalRecords = 0;
         renderPagination();
     }
@@ -577,7 +475,6 @@ async function mainShowSubTableDetails(btn) {
     }
 }
 
-
 async function mainFetchProjectNameSuggestions(query) {
     const county = dom.countySelect.value;
     const countyCode = countyCodeMap[county];
@@ -598,19 +495,12 @@ async function mainFetchProjectNameSuggestions(query) {
     }
 }
 
-// --- Rendering and UI Functions ---
-
-function formatNumber(num, decimals = 2) {
-    if (typeof num !== 'number' || isNaN(num)) return '-';
-    return num.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
 function renderRankingReport() {
     if (!analysisDataCache || !analysisDataCache.coreMetrics) return;
     
     const { coreMetrics, projectRanking } = analysisDataCache;
     
-    dom.metricCardsContainer.innerHTML = `<div class="metric-card"><div class="metric-card-title">市場去化總銷售金額</div><div><span class="metric-card-value">${formatNumber(coreMetrics.totalSaleAmount, 0)}</span><span class="metric-card-unit">萬</span></div></div><div class="metric-card"><div class="metric-card-title">總銷去化房屋坪數</div><div><span class="metric-card-value">${formatNumber(coreMetrics.totalHouseArea, 2)}</span><span class="metric-card-unit">坪</span></div></div><div class="metric-card"><div class="metric-card-title">總平均單價</div><div><span class="metric-card-value">${formatNumber(coreMetrics.overallAveragePrice, 2)}</span><span class="metric-card-unit">萬/坪</span></div></div><div class="metric-card"><div class="metric-card-title">總交易筆數</div><div><span class="metric-card-value">${coreMetrics.transactionCount.toLocaleString()}</span><span class="metric-card-unit">筆</span></div></div>`;
+    dom.metricCardsContainer.innerHTML = `<div class="metric-card"><div class="metric-card-title">市場去化總銷售金額</div><div><span class="metric-card-value">${ui.formatNumber(coreMetrics.totalSaleAmount, 0)}</span><span class="metric-card-unit">萬</span></div></div><div class="metric-card"><div class="metric-card-title">總銷去化房屋坪數</div><div><span class="metric-card-value">${ui.formatNumber(coreMetrics.totalHouseArea, 2)}</span><span class="metric-card-unit">坪</span></div></div><div class="metric-card"><div class="metric-card-title">總平均單價</div><div><span class="metric-card-value">${ui.formatNumber(coreMetrics.overallAveragePrice, 2)}</span><span class="metric-card-unit">萬/坪</span></div></div><div class="metric-card"><div class="metric-card-title">總交易筆數</div><div><span class="metric-card-value">${coreMetrics.transactionCount.toLocaleString()}</span><span class="metric-card-unit">筆</span></div></div>`;
     
     projectRanking.sort((a, b) => {
         const valA = a[currentSort.key];
@@ -628,11 +518,11 @@ function renderRankingReport() {
     let bodyHtml = '<tbody>';
     pagedData.forEach((proj, index) => { 
         const rankNumber = (rankingCurrentPage - 1) * rankingPageSize + index + 1;
-        bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${rankNumber}</td><td>${proj.projectName}</td><td>${formatNumber(proj.saleAmountSum, 0)}</td><td>${formatNumber(proj.houseAreaSum)}</td><td>${proj.transactionCount.toLocaleString()}</td><td>${formatNumber(proj.marketShare)}%</td><td>${formatNumber(proj.averagePrice)}</td><td>${formatNumber(proj.minPrice)}</td><td>${formatNumber(proj.maxPrice)}</td><td>${formatNumber(proj.medianPrice)}</td><td>${formatNumber(proj.avgParkingPrice, 0)}</td></tr>`; 
+        bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${rankNumber}</td><td>${proj.projectName}</td><td>${ui.formatNumber(proj.saleAmountSum, 0)}</td><td>${ui.formatNumber(proj.houseAreaSum)}</td><td>${proj.transactionCount.toLocaleString()}</td><td>${ui.formatNumber(proj.marketShare)}%</td><td>${ui.formatNumber(proj.averagePrice)}</td><td>${ui.formatNumber(proj.minPrice)}</td><td>${ui.formatNumber(proj.maxPrice)}</td><td>${ui.formatNumber(proj.medianPrice)}</td><td>${ui.formatNumber(proj.avgParkingPrice, 0)}</td></tr>`; 
     });
     bodyHtml += '</tbody>';
     
-    let footerHtml = `<tfoot class="bg-dark-card font-bold"><tr class="border-t-2 border-gray-600"><td colspan="2">總計</td><td>${formatNumber(coreMetrics.totalSaleAmount, 0)}</td><td>${formatNumber(coreMetrics.totalHouseArea)}</td><td>${coreMetrics.transactionCount.toLocaleString()}</td><td colspan="6"></td></tr></tfoot>`;
+    let footerHtml = `<tfoot class="bg-dark-card font-bold"><tr class="border-t-2 border-gray-600"><td colspan="2">總計</td><td>${ui.formatNumber(coreMetrics.totalSaleAmount, 0)}</td><td>${ui.formatNumber(coreMetrics.totalHouseArea)}</td><td>${coreMetrics.transactionCount.toLocaleString()}</td><td colspan="6"></td></tr></tfoot>`;
     
     dom.rankingTable.innerHTML = headerHtml + bodyHtml + footerHtml;
 
@@ -646,7 +536,7 @@ function renderPriceBandReport() {
     const tableHeaders = ['房數', '衛浴數', '筆數', '平均房屋總價', '最低房屋總價', '1/4分位房屋總價', '中位數房屋總價', '3/4分位房屋總價', '最高房屋總價'];
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
-    priceBandAnalysis.forEach(item => { bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${item.rooms}</td><td>${item.bathrooms}</td><td>${item.count.toLocaleString()}</td><td>${formatNumber(item.avgPrice, 0)}</td><td>${formatNumber(item.minPrice, 0)}</td><td>${formatNumber(item.q1Price, 0)}</td><td>${formatNumber(item.medianPrice, 0)}</td><td>${formatNumber(item.q3Price, 0)}</td><td>${formatNumber(item.maxPrice, 0)}</td></tr>`; });
+    priceBandAnalysis.forEach(item => { bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${item.rooms}</td><td>${item.bathrooms}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.minPrice, 0)}</td><td>${ui.formatNumber(item.q1Price, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td><td>${ui.formatNumber(item.maxPrice, 0)}</td></tr>`; });
     bodyHtml += '</tbody>';
     dom.priceBandTable.innerHTML = headerHtml + bodyHtml;
 }
@@ -659,7 +549,7 @@ function renderUnitPriceReport() {
         const avgPriceToShow = residentialStats.avgPrice[currentAverageType];
         const minPriceTooltip = residentialStats.minPriceProject ? `建案: ${residentialStats.minPriceProject}\n戶型: ${residentialStats.minPriceUnit || '-'}\n樓層: ${residentialStats.minPriceFloor || '-'}` : '';
         const maxPriceTooltip = residentialStats.maxPriceProject ? `建案: ${residentialStats.maxPriceProject}\n戶型: ${residentialStats.maxPriceUnit || '-'}\n樓層: ${residentialStats.maxPriceFloor || '-'}` : '';
-        statsContainer.innerHTML = `<table class="min-w-full divide-y divide-gray-800"><thead><tr><th class="w-1/2">統計項目</th><th class="w-1/2">房屋單價 (萬/坪)</th></tr></thead><tbody><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">平均單價</td><td>${formatNumber(avgPriceToShow)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">最低單價</td><td><span class="has-tooltip" data-tooltip="${minPriceTooltip}">${formatNumber(residentialStats.minPrice)}</span></td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">1/4分位數單價</td><td>${formatNumber(residentialStats.q1Price)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">中位數單價</td><td>${formatNumber(residentialStats.medianPrice)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">3/4分位數單價</td><td>${formatNumber(residentialStats.q3Price)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">最高單價</td><td><span class="has-tooltip" data-tooltip="${maxPriceTooltip}">${formatNumber(residentialStats.maxPrice)}</span></td></tr></tbody></table>`;
+        statsContainer.innerHTML = `<table class="min-w-full divide-y divide-gray-800"><thead><tr><th class="w-1/2">統計項目</th><th class="w-1/2">房屋單價 (萬/坪)</th></tr></thead><tbody><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">平均單價</td><td>${ui.formatNumber(avgPriceToShow)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">最低單價</td><td><span class="has-tooltip" data-tooltip="${minPriceTooltip}">${ui.formatNumber(residentialStats.minPrice)}</span></td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">1/4分位數單價</td><td>${ui.formatNumber(residentialStats.q1Price)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">中位數單價</td><td>${ui.formatNumber(residentialStats.medianPrice)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">3/4分位數單價</td><td>${ui.formatNumber(residentialStats.q3Price)}</td></tr><tr class="hover:bg-dark-card"><td class="font-medium text-gray-300">最高單價</td><td><span class="has-tooltip" data-tooltip="${maxPriceTooltip}">${ui.formatNumber(residentialStats.maxPrice)}</span></td></tr></tbody></table>`;
         dom.residentialStatsExtraInfo.innerHTML = `<p><span class="font-semibold text-cyan-400">最低房屋單價建案：</span>${residentialStats.minPriceProject || 'N/A'}</p><p><span class="font-semibold text-purple-400">最高房屋單價建案：</span>${residentialStats.maxPriceProject || 'N/A'}</p>`;
     } else {
         statsContainer.innerHTML = '<p class="text-gray-500">無符合條件的住宅交易資料可供分析。</p>';
@@ -672,7 +562,7 @@ function renderUnitPriceReport() {
             const residentialAvgToShow = (item.residentialAvg && typeof item.residentialAvg === 'object') ? item.residentialAvg[currentAverageType] : 0;
             const shopAvgToShow = (item.shopAvg && typeof item.shopAvg === 'object') ? item.shopAvg[currentAverageType] : 0;
             const officeAvgToShow = (item.officeAvg && typeof item.officeAvg === 'object') ? item.officeAvg[currentAverageType] : 0;
-            comparisonHtml += `<tr class="hover:bg-dark-card"><td>${item.projectName}</td><td>${residentialAvgToShow > 0 ? formatNumber(residentialAvgToShow) : '-'}</td><td>${shopAvgToShow > 0 ? formatNumber(shopAvgToShow) : '-'}</td><td>${item.shopMultiple > 0 ? formatNumber(item.shopMultiple) + ' 倍' : '-'}</td><td>${officeAvgToShow > 0 ? formatNumber(officeAvgToShow) : '-'}</td><td>${item.officeMultiple > 0 ? formatNumber(item.officeMultiple) + ' 倍' : '-'}</td></tr>`;
+            comparisonHtml += `<tr class="hover:bg-dark-card"><td>${item.projectName}</td><td>${residentialAvgToShow > 0 ? ui.formatNumber(residentialAvgToShow) : '-'}</td><td>${shopAvgToShow > 0 ? ui.formatNumber(shopAvgToShow) : '-'}</td><td>${item.shopMultiple > 0 ? ui.formatNumber(item.shopMultiple) + ' 倍' : '-'}</td><td>${officeAvgToShow > 0 ? ui.formatNumber(officeAvgToShow) : '-'}</td><td>${item.officeMultiple > 0 ? ui.formatNumber(item.officeMultiple) + ' 倍' : '-'}</td></tr>`;
         });
         comparisonHtml += `</tbody></table>`;
         comparisonContainer.innerHTML = comparisonHtml;
@@ -685,13 +575,13 @@ function renderParkingAnalysisReport() {
     if (!analysisDataCache || !analysisDataCache.parkingAnalysis) return;
     const { parkingRatio, avgPriceByType, rampPlanePriceByFloor } = analysisDataCache.parkingAnalysis;
     if (parkingRatio) {
-        dom.parkingRatioTableContainer.innerHTML = `<table class="min-w-full divide-y divide-gray-800"><thead><tr><th>配置類型</th><th>交易筆數</th><th>佔比(%)</th></tr></thead><tbody><tr class="hover:bg-dark-card"><td>有搭車位</td><td>${parkingRatio.withParking.count.toLocaleString()}</td><td>${formatNumber(parkingRatio.withParking.percentage, 2)}%</td></tr><tr class="hover:bg-dark-card"><td>沒搭車位</td><td>${parkingRatio.withoutParking.count.toLocaleString()}</td><td>${formatNumber(parkingRatio.withoutParking.percentage, 2)}%</td></tr></tbody></table>`;
+        dom.parkingRatioTableContainer.innerHTML = `<table class="min-w-full divide-y divide-gray-800"><thead><tr><th>配置類型</th><th>交易筆數</th><th>佔比(%)</th></tr></thead><tbody><tr class="hover:bg-dark-card"><td>有搭車位</td><td>${parkingRatio.withParking.count.toLocaleString()}</td><td>${ui.formatNumber(parkingRatio.withParking.percentage, 2)}%</td></tr><tr class="hover:bg-dark-card"><td>沒搭車位</td><td>${parkingRatio.withoutParking.count.toLocaleString()}</td><td>${ui.formatNumber(parkingRatio.withoutParking.percentage, 2)}%</td></tr></tbody></table>`;
     } else {
         dom.parkingRatioTableContainer.innerHTML = '<p class="text-gray-500">無車位配比資料可供分析。</p>';
     }
     if (avgPriceByType && avgPriceByType.length > 0) {
         let avgPriceHtml = `<table class="min-w-full divide-y divide-gray-800"><thead><tr><th>車位類型</th><th>交易筆數</th><th>車位總數</th><th>平均單價(萬)</th><th>單價中位數(萬)</th><th>單價3/4位數(萬)</th></tr></thead><tbody>`;
-        avgPriceByType.sort((a, b) => b.transactionCount - a.transactionCount).forEach(item => { avgPriceHtml += `<tr class="hover:bg-dark-card"><td>${item.type}</td><td>${item.transactionCount.toLocaleString()}</td><td>${item.count.toLocaleString()}</td><td>${formatNumber(item.avgPrice, 0)}</td><td>${formatNumber(item.medianPrice, 0)}</td><td>${formatNumber(item.q3Price, 0)}</td></tr>`; });
+        avgPriceByType.sort((a, b) => b.transactionCount - a.transactionCount).forEach(item => { avgPriceHtml += `<tr class="hover:bg-dark-card"><td>${item.type}</td><td>${item.transactionCount.toLocaleString()}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td></tr>`; });
         avgPriceHtml += `</tbody></table>`;
         dom.avgPriceByTypeTableContainer.innerHTML = avgPriceHtml;
     } else {
@@ -704,7 +594,7 @@ function renderParkingAnalysisReport() {
             if (item && item.count > 0) {
                 const maxPriceTooltip = item.maxPriceProject ? `建案: ${item.maxPriceProject}\n戶型: ${item.maxPriceUnit || '-'}\n樓層: ${item.maxPriceFloor || '-'}` : '';
                 const minPriceTooltip = item.minPriceProject ? `建案: ${item.minPriceProject}\n戶型: ${item.minPriceUnit || '-'}\n樓層: ${item.minPriceFloor || '-'}` : '';
-                floorPriceHtml += `<tr class="hover:bg-dark-card"><td>${floorMapping[item.floor] || item.floor}</td><td>${item.count.toLocaleString()}</td><td>${formatNumber(item.avgPrice, 0)}</td><td>${formatNumber(item.medianPrice, 0)}</td><td>${formatNumber(item.q3Price, 0)}</td><td><span class="has-tooltip" data-tooltip="${maxPriceTooltip}">${formatNumber(item.maxPrice, 0)}</span></td><td><span class="has-tooltip" data-tooltip="${minPriceTooltip}">${formatNumber(item.minPrice, 0)}</span></td></tr>`;
+                floorPriceHtml += `<tr class="hover:bg-dark-card"><td>${floorMapping[item.floor] || item.floor}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td><td><span class="has-tooltip" data-tooltip="${maxPriceTooltip}">${ui.formatNumber(item.maxPrice, 0)}</span></td><td><span class="has-tooltip" data-tooltip="${minPriceTooltip}">${ui.formatNumber(item.minPrice, 0)}</span></td></tr>`;
             }
         });
         floorPriceHtml += `</tbody></table>`;
@@ -872,7 +762,7 @@ function renderVelocityTable() {
         selectedVelocityRooms.forEach(roomType => {
             const stats = periodData[roomType];
             if (stats) {
-                   rowHtml += `<td>${stats.count.toLocaleString()}</td><td>${formatNumber(stats.priceSum, 0)}</td><td>${formatNumber(stats.areaSum, 2)}</td>`;
+                   rowHtml += `<td>${stats.count.toLocaleString()}</td><td>${ui.formatNumber(stats.priceSum, 0)}</td><td>${ui.formatNumber(stats.areaSum, 2)}</td>`;
                 rowTotal.count += stats.count;
                 rowTotal.priceSum += stats.priceSum;
                 rowTotal.areaSum += stats.areaSum;
@@ -880,7 +770,7 @@ function renderVelocityTable() {
                  rowHtml += `<td>-</td><td>-</td><td>-</td>`;
             }
         });
-        rowHtml += `<td class="font-semibold total-col">${rowTotal.count.toLocaleString()}</td><td class="font-semibold total-col">${formatNumber(rowTotal.priceSum, 0)}</td><td class="font-semibold total-col">${formatNumber(rowTotal.areaSum, 2)}</td></tr>`;
+        rowHtml += `<td class="font-semibold total-col">${rowTotal.count.toLocaleString()}</td><td class="font-semibold total-col">${ui.formatNumber(rowTotal.priceSum, 0)}</td><td class="font-semibold total-col">${ui.formatNumber(rowTotal.areaSum, 2)}</td></tr>`;
         bodyHtml += rowHtml;
     });
     bodyHtml += '</tbody>';
@@ -1035,8 +925,8 @@ function renderHorizontalPriceGrid(grid, floors, units, colorMap) {
                 let cellContent = cellData.map(tx => {
                     const parkingIcon = tx.hasParking ? ` <i class="fas fa-parking parking-icon" title="含車位"></i>` : '';
                     const storefrontIcon = tx.isStorefront ? `<i class="fas fa-store" title="店舖類型"></i> ` : '';
-                    const tooltipText = `交易總價: ${formatNumber(tx.tooltipInfo.totalPrice, 0)} 萬\n房屋總價: ${formatNumber(tx.tooltipInfo.housePrice, 0)} 萬\n車位總價: ${formatNumber(tx.tooltipInfo.parkingPrice, 0)} 萬\n房屋面積: ${formatNumber(tx.tooltipInfo.houseArea, 2)} 坪\n房間數: ${tx.tooltipInfo.rooms || '-'} 房`;
-                    return `<div class="has-tooltip py-1" data-tooltip="${tooltipText}"><span>${storefrontIcon}${formatNumber(tx.unitPrice, 1)}萬</span>${parkingIcon}<br><span class="text-xs text-gray-400">(${tx.transactionDate})</span></div>`;
+                    const tooltipText = `交易總價: ${ui.formatNumber(tx.tooltipInfo.totalPrice, 0)} 萬\n房屋總價: ${ui.formatNumber(tx.tooltipInfo.housePrice, 0)} 萬\n車位總價: ${ui.formatNumber(tx.tooltipInfo.parkingPrice, 0)} 萬\n房屋面積: ${ui.formatNumber(tx.tooltipInfo.houseArea, 2)} 坪\n房間數: ${tx.tooltipInfo.rooms || '-'} 房`;
+                    return `<div class="has-tooltip py-1" data-tooltip="${tooltipText}"><span>${storefrontIcon}${ui.formatNumber(tx.unitPrice, 1)}萬</span>${parkingIcon}<br><span class="text-xs text-gray-400">(${tx.transactionDate})</span></div>`;
                 }).join('');
                 bodyHtml += `<td style="background-color: ${bgColor}; vertical-align: top; padding: 4px 8px; border-left: 1px solid #374151;"><div class="grid-cell-content">${cellContent}</div></td>`;
             } else {
@@ -1100,7 +990,7 @@ function renderTable(data) {
                 if (header === '地址' || header === '備註') {
                     td.innerHTML = `<div class="scrollable-cell">${value ?? "-"}</div>`;
                 } else {
-                    td.textContent = (typeof value === 'number' && !Number.isInteger(value)) ? formatNumber(value) : (value ?? "-");
+                    td.textContent = (typeof value === 'number' && !Number.isInteger(value)) ? ui.formatNumber(value) : (value ?? "-");
                 }
                 tr.appendChild(td);
                 if (isPresale && header === '戶別') {
@@ -1134,90 +1024,17 @@ function renderSubTable(title, records) {
 }
 
 function renderPagination() {
-    createPaginationControls(dom.paginationControls, totalRecords, currentPage, pageSize, (page) => {
+    ui.createPaginationControls(dom.paginationControls, totalRecords, currentPage, pageSize, (page) => {
         currentPage = page;
         mainFetchData();
     });
 }
 
 function renderRankingPagination(totalItems) {
-    createPaginationControls(dom.rankingPaginationControls, totalItems, rankingCurrentPage, rankingPageSize, (page) => {
+    ui.createPaginationControls(dom.rankingPaginationControls, totalItems, rankingCurrentPage, rankingPageSize, (page) => {
         rankingCurrentPage = page;
         renderRankingReport();
     });
-}
-
-function createPaginationControls(container, totalItems, currentPage, pageSize, onPageChange) {
-    container.innerHTML = '';
-    if (totalItems === 0) {
-        container.innerHTML = `<span>共 0 筆資料</span>`;
-        return;
-    }
-
-    const totalPages = Math.ceil(totalItems / pageSize);
-    let paginationHtml = `<div class="flex-1">共 ${totalItems} 筆資料</div><div class="flex items-center space-x-1">`;
-    
-    paginationHtml += `<button class="pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
-
-    let startPage, endPage;
-    if (totalPages <= 9) {
-        startPage = 1;
-        endPage = totalPages;
-    } else {
-        if (currentPage <= 5) {
-            startPage = 1;
-            endPage = 7;
-        } else if (currentPage + 4 >= totalPages) {
-            startPage = totalPages - 8;
-            endPage = totalPages;
-        } else {
-            startPage = currentPage - 4;
-            endPage = currentPage + 3;
-        }
-    }
-
-    if (startPage > 1) {
-        paginationHtml += `<button class="pagination-btn" data-page="1">1</button>`;
-        if (startPage > 2) {
-            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        const activeClass = i === currentPage ? 'active' : '';
-        paginationHtml += `<button class="pagination-btn ${activeClass}" data-page="${i}">${i}</button>`;
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
-        }
-        paginationHtml += `<button class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
-    }
-
-    paginationHtml += `<button class="pagination-btn" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>&raquo;</button>`;
-    paginationHtml += '</div>';
-    
-    container.innerHTML = paginationHtml;
-    
-    container.querySelectorAll('.pagination-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const page = parseInt(e.currentTarget.dataset.page);
-            if (!isNaN(page)) {
-                onPageChange(page);
-            }
-        });
-    });
-
-    const style = document.createElement('style');
-    style.textContent = `
-        .pagination-btn { background-color: #374151; color: #d1d5db; font-weight: 500; border: none; padding: 0.5rem 0.75rem; border-radius: 0.375rem; cursor: pointer; transition: all 0.2s; }
-        .pagination-btn:hover:not(:disabled) { background-color: #06b6d4; color: white; }
-        .pagination-btn.active { background-color: #06b6d4; color: white; cursor: default; }
-        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .pagination-ellipsis { color: #9ca3af; padding: 0.5rem 0.25rem; }
-    `;
-    document.head.appendChild(style);
 }
 
 function updateDistrictOptions() {
