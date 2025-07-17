@@ -1,28 +1,8 @@
-// js/app.js (已修正 getFilters is not defined 錯誤)
+// js/app.js (已拆分 api.js)
 
-// 從模組中引入設定與 Supabase Client
+// 從模組中引入
 import { supabase, API_ENDPOINTS, districtData, countyCodeMap } from './modules/config.js';
-
-// 認證輔助函數
-async function getAuthHeaders() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
-        console.error('無法獲取 Session，將跳轉回登入頁面');
-        window.location.href = 'login.html';
-        return null;
-    }
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-    };
-}
-
-async function checkAuthOnLoad() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        window.location.href = 'login.html';
-    }
-}
+import * as api from './modules/api.js'; // 引入所有 api 模組的函式
 
 // DOM Elements
 const dom = {
@@ -249,11 +229,6 @@ async function handleShareClick(reportType) {
     btn.disabled = true;
     btn.innerHTML = `<div class="loader-sm"></div>`;
     try {
-        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) throw new Error(`認證刷新失敗: ${refreshError.message}`);
-        if (!session) throw new Error('認證刷新後無法取得 Session，請重新登入');
-        const headers = await getAuthHeaders();
-        if (!headers) throw new Error("認證失敗，無法取得認證標頭");
         const filters = getFilters();
         const viewOptions = {};
         if (isHeatmapActive) {
@@ -273,12 +248,9 @@ async function handleShareClick(reportType) {
         } else {
             payload.date_config = { type: 'relative', value: dateRangeValue };
         }
-        const response = await fetch(API_ENDPOINTS.GENERATE_SHARE_LINK, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({ error: '產生分享連結失敗，伺服器未提供詳細資訊' }));
-            throw new Error(err.error);
-        }
-        const result = await response.json();
+
+        const result = await api.generateShareLink(payload);
+        
         dom.shareUrlInput.value = result.publicUrl;
         dom.shareModal.classList.remove('hidden');
         dom.copyFeedback.classList.add('hidden');
@@ -298,7 +270,6 @@ function copyShareUrl() {
     setTimeout(() => { dom.copyFeedback.classList.add('hidden'); }, 2000);
 }
 
-// **這個函式被加回來了**
 function getFilters() {
     const filters = {};
     if (dom.countySelect.value) filters.countyCode = countyCodeMap[dom.countySelect.value] || '';
@@ -317,7 +288,7 @@ function initialize() {
         showMessage("系統初始化失敗：找不到縣市選單。", true);
         return;
     }
-    checkAuthOnLoad();
+    api.checkAuth();
     try {
         const countyNames = Object.keys(districtData);
         if (countyNames.length === 0) {
@@ -337,8 +308,8 @@ function initialize() {
     dom.rankingPaginationControls.className = 'flex justify-between items-center mt-4 text-sm text-gray-400';
     dom.rankingReportContent.querySelector('.overflow-x-auto').insertAdjacentElement('afterend', dom.rankingPaginationControls);
 
-    dom.searchBtn.addEventListener('click', () => { currentPage = 1; fetchData(); });
-    dom.analyzeBtn.addEventListener('click', analyzeData);
+    dom.searchBtn.addEventListener('click', () => { currentPage = 1; mainFetchData(); });
+    dom.analyzeBtn.addEventListener('click', mainAnalyzeData);
     dom.countySelect.addEventListener('change', updateDistrictOptions);
     dom.districtContainer.addEventListener('click', onDistrictContainerClick);
     dom.districtSuggestions.addEventListener('click', onDistrictSuggestionClick);
@@ -352,7 +323,7 @@ function initialize() {
         dom.dateRangeSelect.value = 'custom';
     });
     dom.modalCloseBtn.addEventListener('click', () => dom.modal.classList.add('hidden'));
-    dom.resultsTable.addEventListener('click', e => { if (e.target.closest('.details-btn')) showSubTableDetails(e.target.closest('.details-btn')); });
+    dom.resultsTable.addEventListener('click', e => { if (e.target.closest('.details-btn')) mainShowSubTableDetails(e.target.closest('.details-btn')); });
     
     dom.projectNameInput.addEventListener('focus', onProjectInputFocus);
     dom.projectNameInput.addEventListener('input', onProjectInput);
@@ -434,14 +405,9 @@ async function analyzeHeatmap() {
     btn.innerHTML = `<div class="loader-sm"></div><span class="ml-2">分析中...</span>`;
     btn.classList.add('btn-loading');
     try {
-        const headers = await getAuthHeaders();
-        if (!headers) return;
-        const floorPremium = parseFloat(dom.floorPremiumInput.value);
-        const payload = { filters: { ...getFilters(), floorPremium: (typeof floorPremium === 'number' && floorPremium >= 0) ? floorPremium : 0.3 } };
-        
         if (!analysisDataCache || !analysisDataCache.priceGridAnalysis) {
              console.log("No analysis cache found. Fetching new data for heatmap...");
-             await analyzeData(); 
+             await mainAnalyzeData(); 
              if (!analysisDataCache) { 
                  throw new Error("無法獲取基礎分析資料，請先執行標準分析。");
              }
@@ -536,18 +502,13 @@ function handleDateRangeChange() {
     dom.dateEndInput.value = formatDate(endDate);
 }
 
-async function analyzeData() {
+// Main data fetching and analysis functions (orchestrators)
+async function mainAnalyzeData() {
     if (!dom.countySelect.value) return showMessage('請先選擇一個縣市再進行分析。');
     showLoading('分析中，請稍候...');
     try {
-        const headers = await getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(API_ENDPOINTS.RANKING_ANALYSIS, { method: 'POST', headers: headers, body: JSON.stringify({ filters: getFilters() }) });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({ error: `分析請求失敗: ${response.status}` }));
-            throw new Error(err.error);
-        }
-        analysisDataCache = await response.json();
+        analysisDataCache = await api.analyzeData(getFilters());
+
         if (!analysisDataCache.coreMetrics || analysisDataCache.projectRanking.length === 0) {
             const msg = analysisDataCache.message || '找不到符合條件的分析資料。';
             showMessage(msg);
@@ -572,17 +533,13 @@ async function analyzeData() {
     }
 }
 
-async function fetchData() {
+async function mainFetchData() {
     showLoading('查詢中，請稍候...');
     try {
-        const headers = await getAuthHeaders();
-        if (!headers) return;
-        const response = await fetch(API_ENDPOINTS.QUERY_DATA, { method: 'POST', headers: headers, body: JSON.stringify({ filters: getFilters(), pagination: { page: currentPage, limit: pageSize } }) });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({ error: '無法解析伺服器回應' }));
-            throw new Error(err.error);
-        }
-        const result = await response.json();
+        const filters = getFilters();
+        const pagination = { page: currentPage, limit: pageSize };
+        const result = await api.fetchData(filters, pagination);
+        
         totalRecords = result.count || 0;
         if (!result.data || result.data.length === 0) {
             showMessage('找不到符合條件的資料。');
@@ -601,6 +558,47 @@ async function fetchData() {
         renderPagination();
     }
 }
+
+async function mainShowSubTableDetails(btn) {
+    const { id, type, county } = btn.dataset;
+    dom.modalTitle.textContent = `附表詳細資料 (編號: ${id})`;
+    dom.modalContent.innerHTML = '<div class="loader mx-auto"></div>';
+    dom.modal.classList.remove('hidden');
+    try {
+        const result = await api.fetchSubData(id, type, county);
+        let contentHTML = '<div class="space-y-6">';
+        if (type !== '預售交易' && result.build) contentHTML += renderSubTable('建物資料', result.build);
+        if (result.land) contentHTML += renderSubTable('土地資料', result.land);
+        if (result.park) contentHTML += renderSubTable('車位資料', result.park);
+        contentHTML = (contentHTML === '<div class="space-y-6">') ? '<p>此筆紀錄沒有對應的附表資料。</p>' : contentHTML + '</div>';
+        dom.modalContent.innerHTML = contentHTML;
+    } catch (error) {
+        dom.modalContent.innerHTML = `<p class="text-red-400 font-semibold">查詢失敗:</p><p class="mt-2 text-sm text-gray-400">${error.message}</p>`;
+    }
+}
+
+
+async function mainFetchProjectNameSuggestions(query) {
+    const county = dom.countySelect.value;
+    const countyCode = countyCodeMap[county];
+    if (!countyCode) {
+        dom.projectNameSuggestions.classList.add('hidden');
+        dom.filterCard.classList.remove('z-elevate-filters');
+        return;
+    }
+    try {
+        dom.filterCard.classList.add('z-elevate-filters');
+        const processedQuery = query.trim().split(/\s+/).join('%');
+        const names = await api.fetchProjectNameSuggestions(countyCode, processedQuery, selectedDistricts);
+        renderSuggestions(names);
+    } catch (error) {
+        console.error("獲取建案建議失敗:", error);
+        dom.projectNameSuggestions.innerHTML = `<div class="p-2 text-red-400">讀取建議失敗。</div>`;
+        dom.projectNameSuggestions.classList.remove('hidden');
+    }
+}
+
+// --- Rendering and UI Functions ---
 
 function formatNumber(num, decimals = 2) {
     if (typeof num !== 'number' || isNaN(num)) return '-';
@@ -644,7 +642,7 @@ function renderRankingReport() {
 function renderPriceBandReport() {
     if (!analysisDataCache || !analysisDataCache.priceBandAnalysis) return;
     const { priceBandAnalysis } = analysisDataCache;
-    priceBandAnalysis.sort((a, b) => { if (a.rooms !== b.rooms) return a.rooms - b.bathrooms; });
+    priceBandAnalysis.sort((a, b) => { if (a.rooms !== b.rooms) return a.rooms - b.rooms; return a.bathrooms - b.bathrooms; });
     const tableHeaders = ['房數', '衛浴數', '筆數', '平均房屋總價', '最低房屋總價', '1/4分位房屋總價', '中位數房屋總價', '3/4分位房屋總價', '最高房屋總價'];
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
@@ -1118,43 +1116,27 @@ function renderTable(data) {
     dom.resultsTable.append(thead, tbody);
 }
 
-async function showSubTableDetails(btn) {
-    const { id, type, county } = btn.dataset;
-    dom.modalTitle.textContent = `附表詳細資料 (編號: ${id})`;
-    dom.modalContent.innerHTML = '<div class="loader mx-auto"></div>';
-    dom.modal.classList.remove('hidden');
-    try {
-        if (!id || !type || !county || county === 'undefined') {
-            throw new Error(`前端參數不足，無法查詢附表。(縣市代碼: ${county})`);
-        }
-        const headers = await getAuthHeaders();
-        if (!headers) throw new Error("認證失敗，請重新登入。");
-        
-        const response = await fetch(API_ENDPOINTS.SUB_DATA, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({ id, type, county })
-        });
-        if (!response.ok) {
-            const errorResult = await response.json().catch(() => ({ error: '無法從伺服器獲取附表資料' }));
-            throw new Error(errorResult.error);
-        }
-        const result = await response.json();
-        let contentHTML = '<div class="space-y-6">';
-        if (type !== '預售交易' && result.build) contentHTML += renderSubTable('建物資料', result.build);
-        if (result.land) contentHTML += renderSubTable('土地資料', result.land);
-        if (result.park) contentHTML += renderSubTable('車位資料', result.park);
-        contentHTML = (contentHTML === '<div class="space-y-6">') ? '<p>此筆紀錄沒有對應的附表資料。</p>' : contentHTML + '</div>';
-        dom.modalContent.innerHTML = contentHTML;
-    } catch (error) {
-        dom.modalContent.innerHTML = `<p class="text-red-400 font-semibold">查詢失敗:</p><p class="mt-2 text-sm text-gray-400">${error.message}</p>`;
+function renderSubTable(title, records) {
+    if (!records || !Array.isArray(records) || records.length === 0) {
+        return `<div class="mb-4"><h3 class="text-lg font-semibold text-cyan-400 mb-2">${title}</h3><p class="text-sm text-gray-500">無資料</p></div>`;
     }
+    const headers = Object.keys(records[0]).filter(h => h !== 'id' && h !== '編號');
+    let html = `<div><h3 class="text-lg font-semibold text-cyan-400 mb-2">${title}</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead><tr class="border-b border-gray-600">`;
+    headers.forEach(header => { html += `<th class="py-2 pr-2 font-medium text-gray-400">${header}</th>` });
+    html += '</tr></thead><tbody>';
+    records.forEach(record => {
+        html += '<tr class="border-b border-gray-700 last:border-b-0">';
+        headers.forEach(header => { html += `<td class="py-2 pr-2">${record[header] ?? "-"}</td>` });
+        html += '</tr>'
+    });
+    html += '</tbody></table></div></div>';
+    return html;
 }
 
 function renderPagination() {
     createPaginationControls(dom.paginationControls, totalRecords, currentPage, pageSize, (page) => {
         currentPage = page;
-        fetchData();
+        mainFetchData();
     });
 }
 
@@ -1236,23 +1218,6 @@ function createPaginationControls(container, totalItems, currentPage, pageSize, 
         .pagination-ellipsis { color: #9ca3af; padding: 0.5rem 0.25rem; }
     `;
     document.head.appendChild(style);
-}
-
-function renderSubTable(title, records) {
-    if (!records || !Array.isArray(records) || records.length === 0) {
-        return `<div class="mb-4"><h3 class="text-lg font-semibold text-cyan-400 mb-2">${title}</h3><p class="text-sm text-gray-500">無資料</p></div>`;
-    }
-    const headers = Object.keys(records[0]).filter(h => h !== 'id' && h !== '編號');
-    let html = `<div><h3 class="text-lg font-semibold text-cyan-400 mb-2">${title}</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead><tr class="border-b border-gray-600">`;
-    headers.forEach(header => { html += `<th class="py-2 pr-2 font-medium text-gray-400">${header}</th>` });
-    html += '</tr></thead><tbody>';
-    records.forEach(record => {
-        html += '<tr class="border-b border-gray-700 last:border-b-0">';
-        headers.forEach(header => { html += `<td class="py-2 pr-2">${record[header] ?? "-"}</td>` });
-        html += '</tr>'
-    });
-    html += '</tbody></table></div></div>';
-    return html;
 }
 
 function updateDistrictOptions() {
@@ -1357,40 +1322,15 @@ function removeDistrict(name) {
 
 function onProjectInputFocus() {
     if (!dom.projectNameInput.value.trim() && dom.countySelect.value) {
-        fetchProjectNameSuggestions('');
+        mainFetchProjectNameSuggestions('');
     }
 }
 
 function onProjectInput() {
     clearTimeout(suggestionDebounceTimer);
     suggestionDebounceTimer = setTimeout(() => {
-        fetchProjectNameSuggestions(dom.projectNameInput.value);
+        mainFetchProjectNameSuggestions(dom.projectNameInput.value);
     }, 300);
-}
-
-async function fetchProjectNameSuggestions(query) {
-    const county = dom.countySelect.value;
-    const countyCode = countyCodeMap[county];
-    if (!countyCode) {
-        dom.projectNameSuggestions.classList.add('hidden');
-        dom.filterCard.classList.remove('z-elevate-filters');
-        return;
-    }
-    try {
-        const headers = await getAuthHeaders();
-        if (!headers) return;
-        dom.filterCard.classList.add('z-elevate-filters');
-        const processedQuery = query.trim().split(/\s+/).join('%');
-        const payload = { countyCode, query: processedQuery, districts: selectedDistricts };
-        const response = await fetch(API_ENDPOINTS.PROJECT_NAMES, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error(`伺服器錯誤: ${response.status}`);
-        const names = await response.json();
-        renderSuggestions(names);
-    } catch (error) {
-        console.error("獲取建案建議失敗:", error);
-        dom.projectNameSuggestions.innerHTML = `<div class="p-2 text-red-400">讀取建議失敗。</div>`;
-        dom.projectNameSuggestions.classList.remove('hidden');
-    }
 }
 
 function renderSuggestions(names) {
