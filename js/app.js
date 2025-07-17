@@ -1,4 +1,4 @@
-// js/app.js (已修正錯誤)
+// js/app.js (已修正 getFilters is not defined 錯誤)
 
 // 從模組中引入設定與 Supabase Client
 import { supabase, API_ENDPOINTS, districtData, countyCodeMap } from './modules/config.js';
@@ -296,6 +296,19 @@ function copyShareUrl() {
     document.execCommand('copy');
     dom.copyFeedback.classList.remove('hidden');
     setTimeout(() => { dom.copyFeedback.classList.add('hidden'); }, 2000);
+}
+
+// **這個函式被加回來了**
+function getFilters() {
+    const filters = {};
+    if (dom.countySelect.value) filters.countyCode = countyCodeMap[dom.countySelect.value] || '';
+    if (selectedDistricts.length > 0) filters.districts = selectedDistricts;
+    if (dom.typeSelect.value) filters.type = dom.typeSelect.value;
+    if (dom.dateStartInput.value) filters.dateStart = dom.dateStartInput.value;
+    if (dom.dateEndInput.value) filters.dateEnd = dom.dateEndInput.value;
+    if (dom.buildingTypeSelect.value) filters.buildingType = dom.buildingTypeSelect.value;
+    if (selectedProjects.length > 0) filters.projectNames = selectedProjects;
+    return filters;
 }
 
 function initialize() {
@@ -631,7 +644,7 @@ function renderRankingReport() {
 function renderPriceBandReport() {
     if (!analysisDataCache || !analysisDataCache.priceBandAnalysis) return;
     const { priceBandAnalysis } = analysisDataCache;
-    priceBandAnalysis.sort((a, b) => { if (a.rooms !== b.rooms) return a.rooms - b.rooms; return a.bathrooms - b.bathrooms; });
+    priceBandAnalysis.sort((a, b) => { if (a.rooms !== b.rooms) return a.rooms - b.bathrooms; });
     const tableHeaders = ['房數', '衛浴數', '筆數', '平均房屋總價', '最低房屋總價', '1/4分位房屋總價', '中位數房屋總價', '3/4分位房屋總價', '最高房屋總價'];
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
