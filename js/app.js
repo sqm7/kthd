@@ -1,4 +1,4 @@
-// js/app.js (已更新)
+// js/app.js (已修正錯誤)
 
 // 從模組中引入設定與 Supabase Client
 import { supabase, API_ENDPOINTS, districtData, countyCodeMap } from './modules/config.js';
@@ -241,7 +241,6 @@ function renderPriceGapHeatmap() {
 function renderHeatmapSummaryTable(summary) { if (!summary || summary.transactionCount === 0) { dom.heatmapSummaryTableContainer.innerHTML = ''; return; } const { totalBaselineHousePrice, totalPricePremiumValue, totalSoldArea } = summary; const premiumPercentage = (totalPricePremiumValue / totalBaselineHousePrice) * 100; const avgPriceAdjustment = totalPricePremiumValue / totalSoldArea; const formatValue = (value, unit = '', decimals = 2) => { const num = formatNumber(value, decimals); return value > 0 ? `<span class="summary-value-positive">+${num} ${unit}</span>` : `<span class="summary-value-negative">${num} ${unit}</span>`; }; const tableHtml = ` <h3 class="report-section-title mt-8">調價幅度統計摘要 (排除店舖)</h3> <div class="overflow-x-auto"> <table class="min-w-full summary-table"> <thead> <tr> <th>基準房屋總價</th> <th>調價幅度總額</th> <th>總溢價率</th> <th>已售房屋坪數</th> <th>平均單價調價</th> </tr> </thead> <tbody> <tr> <td>${formatNumber(totalBaselineHousePrice, 0)} 萬</td> <td>${formatValue(totalPricePremiumValue, '萬', 0)}</td> <td>${formatValue(premiumPercentage, '%')}</td> <td>${formatNumber(totalSoldArea)} 坪</td> <td>${formatValue(avgPriceAdjustment, '萬/坪')}</td> </tr> </tbody> </table> </div> `; dom.heatmapSummaryTableContainer.innerHTML = tableHtml; }
 function renderHorizontalComparisonTable(projectData) { if (!projectData || !projectData.horizontalComparison || projectData.horizontalComparison.length === 0) { dom.heatmapHorizontalComparisonTableContainer.innerHTML = ''; return; } const { horizontalComparison, refFloorForComparison } = projectData; const formatValue = (value, unit = '', decimals = 2, addSign = false) => { if (typeof value !== 'number' || isNaN(value)) return '-'; const num = formatNumber(value, decimals); if (addSign) { return value > 0 ? `<span class="summary-value-positive">+${num} ${unit}</span>` : value < 0 ? `<span class="summary-value-negative">${num} ${unit}</span>` : `<span>${num} ${unit}</span>`; } return (unit === '%') ? num + unit : num + ' ' + unit; }; const tableHtml = ` <h3 class="report-section-title mt-8">戶型水平價差與溢價貢獻 (基準樓層: F${refFloorForComparison || 'N/A'})</h3> <p class="text-sm text-gray-500 mt-2 mb-4">* 水平價差是將各戶型基準價換算至共同基準樓層後的價差，以最低價戶型為 0 基準。</p> <div class="overflow-x-auto"> <table class="min-w-full summary-table"> <thead> <tr> <th>戶型</th> <th>基準戶 (樓/價)</th> <th>水平價差(萬/坪)</th> <th>去化戶數</th> <th>溢價貢獻</th> <th>貢獻佔比</th> <th>基準房屋總價</th> <th>平均單價調價</th> </tr> </thead> <tbody> ${horizontalComparison.map(item => ` <tr> <td>${item.unitType}</td> <td>${item.anchorInfo}</td> <td>${formatValue(item.horizontalPriceDiff, '萬/坪', 2, true)}</td> <td>${item.unitsSold.toLocaleString()} 戶</td> <td>${formatValue(item.timePremiumContribution, '萬', 0, true)}</td> <td>${formatValue(item.contributionPercentage, '%')}</td> <td>${formatNumber(item.baselineHousePrice, 0)} 萬</td> <td>${formatValue(item.avgPriceAdjustment, '萬/坪', 2, true)}</td> </tr> `).join('')} </tbody> </table> </div> `; dom.heatmapHorizontalComparisonTableContainer.innerHTML = tableHtml; }
 
-// --- 分享功能相關函式 ---
 async function handleShareClick(reportType) {
     const btnIdMapping = { 'price_grid': 'sharePriceGridBtn' };
     const btnId = btnIdMapping[reportType];
@@ -299,7 +298,6 @@ function copyShareUrl() {
     setTimeout(() => { dom.copyFeedback.classList.add('hidden'); }, 2000);
 }
 
-// --- 核心功能函式 ---
 function initialize() {
     if (!dom.countySelect) {
         console.error("錯誤：無法找到縣市選單元素(ID='county')。請檢查 HTML 的 ID 是否正確。");
@@ -484,18 +482,6 @@ function switchTab(targetTab) {
     if (targetTab === 'velocity-report' && analysisDataCache) {
         renderAreaHeatmap();
     }
-}
-
-function getFilters() {
-    const filters = {};
-    if (dom.countySelect.value) filters.countyCode = countyCodeMap[dom.countySelect.value] || '';
-    if (selectedDistricts.length > 0) filters.districts = selectedDistricts;
-    if (dom.typeSelect.value) filters.type = dom.typeSelect.value;
-    if (dom.dateStartInput.value) filters.dateStart = dom.dateStartInput.value;
-    if (dom.dateEndInput.value) filters.dateEnd = dom.dateEndInput.value;
-    if (dom.buildingTypeSelect.value) filters.buildingType = dom.buildingTypeSelect.value;
-    if (selectedProjects.length > 0) filters.projectNames = selectedProjects;
-    return filters;
 }
 
 function showLoading(message) {
