@@ -225,7 +225,7 @@ export function renderParkingAnalysisReport() {
     }
 }
 
-// ▼▼▼ 修改/新增開始 ▼▼▼
+// ▼▼▼ 【核心修改】房型面積熱力圖 ▼▼▼
 export function renderAreaHeatmap() {
     if (state.areaHeatmapChart) {
         state.areaHeatmapChart.destroy();
@@ -279,6 +279,7 @@ export function renderAreaHeatmap() {
         chart: {
             height: dynamicHeight, 
             type: 'heatmap',
+            background: 'transparent', // 確保圖表背景透明
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb'
         },
@@ -294,19 +295,25 @@ export function renderAreaHeatmap() {
                 useFillColorAsStroke: true,
                 colorScale: {
                     ranges: [{
-                        from: 0, to: 0, color: 'transparent', name: '0 戶' // 0戶時設為透明
+                        from: 0, to: 0, color: '#1f2937', name: '0 戶' // 修改：使用背景色，使其看起來透明
                     }, {
-                        from: 1, to: 2, color: '#fef9c3', name: '1-2 戶' // 極淺黃
+                        from: 1, to: 2, color: '#fef9c3', name: '1-2 戶'     // 極淺黃
                     }, {
-                        from: 3, to: 5, color: '#fef08a', name: '3-5 戶' // 淺黃
+                        from: 3, to: 5, color: '#fef08a', name: '3-5 戶'     // 淺黃
                     }, {
-                        from: 6, to: 10, color: '#fcd34d', name: '6-10 戶' // 金黃
+                        from: 6, to: 10, color: '#fde047', name: '6-10 戶'   // 黃
                     }, {
-                        from: 11, to: 15, color: '#fbbf24', name: '11-15 戶' // 琥珀黃
+                        from: 11, to: 20, color: '#facc15', name: '11-20 戶' // 金黃
                     }, {
-                        from: 16, to: 25, color: '#fb923c', name: '16-25 戶' // 橘色
+                        from: 21, to: 35, color: '#fbbf24', name: '21-35 戶' // 琥珀黃
                     }, {
-                        from: 26, to: 9999, color: '#f97316', name: '> 25 戶' // 深橘
+                        from: 36, to: 50, color: '#fb923c', name: '36-50 戶' // 淺橘
+                    }, {
+                        from: 51, to: 100, color: '#f97316', name: '51-100 戶' // 橘
+                    }, {
+                        from: 101, to: 200, color: '#ea580c', name: '101-200 戶' // 橘紅
+                    }, {
+                        from: 201, to: 9999, color: '#dc2626', name: '> 200 戶' // 紅
                     }]
                 }
             }
@@ -344,6 +351,7 @@ export function renderAreaHeatmap() {
                     const roomType = w.globals.labels[dataPointIndex];
                     const totalInRoom = (distributionData[roomType] || []).filter(area => area >= userMinArea && area <= userMaxArea).length;
                     const percentage = totalInRoom > 0 ? (val / totalInRoom * 100).toFixed(1) : 0;
+                    if (val === 0) return '無成交紀錄';
                     return `${val} 戶 (${percentage}%)`;
                 }
             }
@@ -361,10 +369,10 @@ export function renderSalesVelocityReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
     if (allRoomTypes && allRoomTypes.length > 0) {
-        // 預設選擇 1房, 2房, 3房
+        // 【核心修改】預設選擇 1房, 2房, 3房
         const defaultSelections = ['1房', '2房', '3房'];
         state.selectedVelocityRooms = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
-        // 如果預設的房型都不存在，就全選
+        // 如果預設的房型都不存在於資料中，則退回全選邏輯
         if (state.selectedVelocityRooms.length === 0) {
              state.selectedVelocityRooms = [...allRoomTypes];
         }
@@ -379,7 +387,6 @@ export function renderSalesVelocityReport() {
     renderVelocityTable();
     renderAreaHeatmap();
 }
-// ▲▲▲ 修改/新增結束 ▲▲▲
 
 export function renderVelocityTable() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
