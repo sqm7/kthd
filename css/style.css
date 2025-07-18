@@ -1,32 +1,24 @@
 :root {
-    /* 背景色 (Backgrounds) */
-    --color-dark-bg: #3B3B4B;       /* 背景 */
-    --color-dark-card: #1E1E29;     /* 主匡 */
-    --color-form-bg: #333342;       /* 表單輸入框背景 */
-
-    /* 強調色 (Accents) */
-    --color-cyan-accent: #0177FC;   /* 主要強調色 */
-    --color-purple-accent: #6FCD8E; /* 次要強調色 (原為紫色) */
-
-    /* 文字顏色 (Text) */
-    --color-text-light: #e5e7eb;    /* 主要的淺灰色文字 */
-    --color-text-dark: #9ca3af;     /* 較暗的灰色文字 */
-
-    /* 功能性顏色 (Functional Colors) */
-    --color-text-red: #FB3E51;
-    --color-text-green: #6FCD8E;
-    
-    /* 其他 UI 顏色 */
+    --color-dark-bg: #1a1d29;
+    --color-dark-card: #252836;
+    --color-cyan-accent: #06b6d4;
+    --color-purple-accent: #8b5cf6;
+    --color-form-bg: #1f2937;
     --color-border-default: #4b5563;
+    --color-text-light: #e5e7eb;
+    --color-text-dark: #9ca3af;
+    --color-text-red: #f87171;
+    --color-text-green: #4ade80;
     --color-disabled-bg: #374151;
     --color-multi-tag-bg: #4b5563;
     --color-multi-tag-text: #d1d5db;
     --color-tooltip-bg: #1a1d29;
     --color-tooltip-border: #4b5563;
+    --color-special-remark-bg: rgba(139, 92, 246, 0.1);
+    --color-special-remark-hover-bg: rgba(139, 92, 246, 0.2);
     --color-icon-parking: #a5b4fc;
     --color-icon-special: #facc15;
 }
-
 
 body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: var(--color-dark-bg); color: var(--color-text-light); }
 .glass-card { background: rgba(37, 40, 54, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
