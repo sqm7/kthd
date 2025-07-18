@@ -9,19 +9,18 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // 初始化 Supabase Client 並匯出
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ▼▼▼ 【新增】將顏色定義集中到此處 ▼▼▼
+// ▼▼▼ 【顏色修改處】 ▼▼▼
 export const THEME_COLORS = {
     'dark-bg': '#1a1d29',
     'dark-card': '#252836',
-    'cyan-accent': '#06b6d4',
-    'purple-accent': '#8b5cf6',
-    // 也可以把 style.css 中常用的顏色加進來管理
+    'cyan-accent': '#0177FC', // 青色已改為藍色
+    'purple-accent': '#FB3E51', // 紫色已改為紅色
     'form-bg': '#1f2937',
     'border-default': '#4b5563',
     'text-light': '#e5e7eb',
     'text-dark': '#9ca3af'
 };
-// ▲▲▲ 【新增結束】 ▲▲▲
+// ▲▲▲ 【修改結束】 ▲▲▲
 
 // 將所有 API 端點集中管理並匯出
 export const API_ENDPOINTS = {
