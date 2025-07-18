@@ -83,7 +83,6 @@ function initialize() {
     dom.heatmapIntervalInput.addEventListener('change', renderers.renderAreaHeatmap);
     dom.heatmapMinAreaInput.addEventListener('change', renderers.renderAreaHeatmap);
     dom.heatmapMaxAreaInput.addEventListener('change', renderers.renderAreaHeatmap);
-    // ▲▲▲ 修改/新增結束 ▲▲▲
 
     dom.heatmapIntervalIncrementBtn.addEventListener('click', () => {
         const input = dom.heatmapIntervalInput;
