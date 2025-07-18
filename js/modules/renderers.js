@@ -12,19 +12,19 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
 
 /**
  * @FINAL
- * 動態生成熱力圖的顏色區間
+ * 動態生成熱力圖的顏色區間 (簡化標籤版)
  * @param {number} maxValue - 資料中的最大值
  * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
  */
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
     const ranges = [{
-        from: 0, to: 0, color: '#1a1d29', name: '0 戶' // 使用頁面底色，確保視覺上消失
+        from: 0, to: 0, color: 'transparent', name: '0 戶'
     }];
 
     if (maxValue <= 0) return ranges;
 
-    // 根據最大值決定級距策略
+    // 固定級距策略，提供一致的視覺體驗
     const steps = [1, 2, 5, 10, 20, 35, 50, 100, 200];
     let lastStep = 0;
 
@@ -270,7 +270,6 @@ export function renderParkingAnalysisReport() {
     }
 }
 
-// ▼▼▼ 【核心修改】房型面積熱力圖 ▼▼▼
 export function renderAreaHeatmap() {
     if (state.areaHeatmapChart) {
         state.areaHeatmapChart.destroy();
@@ -325,34 +324,21 @@ export function renderAreaHeatmap() {
         };
     });
 
-    // 動態生成顏色區間
     const colorRanges = generateColorRanges(maxValue);
-    
-    // 為最高的區間加上百分位數
-    const allNonZeroCounts = seriesData.flatMap(s => s.data).filter(c => c > 0);
-    if (colorRanges.length > 1 && allNonZeroCounts.length > 0) {
-        const lastRange = colorRanges[colorRanges.length - 1];
-        const threshold = lastRange.from;
-        const countAboveThreshold = allNonZeroCounts.filter(c => c >= threshold).length;
-        const percentile = (countAboveThreshold / allNonZeroCounts.length) * 100;
-        if (percentile <= 50) { // 只在佔比較小時顯示，較有意義
-             lastRange.name = `${lastRange.name} (Top ${percentile.toFixed(1)}%)`;
-        }
-    }
 
     const options = {
         series: seriesData,
         chart: {
             height: dynamicHeight, 
             type: 'heatmap',
-            background: 'transparent', // 確保圖表背景與父容器一致
+            background: 'transparent',
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb'
         },
         dataLabels: {
             enabled: true,
             style: { 
-                colors: ['#111827'], // 使用深色文字確保可讀性
+                colors: ['#111827'],
                 fontWeight: 'bold'
             },
             formatter: (val) => val > 0 ? val : ''
@@ -361,9 +347,9 @@ export function renderAreaHeatmap() {
             heatmap: {
                 shadeIntensity: 0.5,
                 radius: 0,
-                useFillColorAsStroke: false, // 關閉此項讓 0 值格的邊框消失
+                useFillColorAsStroke: true, // 【修正】改回 true，移除多餘框線
                 colorScale: {
-                    ranges: colorRanges // 使用動態生成的顏色區間
+                    ranges: colorRanges
                 }
             }
         },
@@ -396,12 +382,9 @@ export function renderAreaHeatmap() {
         tooltip: {
             theme: 'dark',
             y: {
-                formatter: (val, { seriesIndex, dataPointIndex, w }) => {
+                formatter: (val) => {
                     if (val === 0) return '無成交紀錄';
-                    const roomType = w.globals.labels[dataPointIndex];
-                    const totalInRoom = (distributionData[roomType] || []).filter(area => area >= userMinArea && area <= userMaxArea).length;
-                    const percentage = totalInRoom > 0 ? (val / totalInRoom * 100).toFixed(1) : 0;
-                    return `${val} 戶 (${percentage}%)`;
+                    return `${val} 戶`;
                 }
             }
         },
@@ -418,10 +401,8 @@ export function renderSalesVelocityReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
     if (allRoomTypes && allRoomTypes.length > 0) {
-        // 【核心修改】預設選擇 1房, 2房, 3房
         const defaultSelections = ['1房', '2房', '3房'];
         state.selectedVelocityRooms = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
-        // 如果預設的房型都不存在於資料中，則退回全選邏輯
         if (state.selectedVelocityRooms.length === 0) {
              state.selectedVelocityRooms = [...allRoomTypes];
         }
