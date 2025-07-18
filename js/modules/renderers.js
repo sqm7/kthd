@@ -244,7 +244,6 @@ export function renderAreaHeatmap() {
     let allAreas = [];
     state.selectedVelocityRooms.forEach(roomType => {
         if (distributionData[roomType]) {
-            // 根據使用者輸入的最小/最大坪數過濾資料
             const filteredAreas = distributionData[roomType].filter(area => area >= userMinArea && area <= userMaxArea);
             allAreas.push(...filteredAreas);
         }
@@ -255,7 +254,6 @@ export function renderAreaHeatmap() {
         return;
     }
     
-    // Y 軸的級距直接使用使用者設定的範圍
     const yAxisCategories = [];
     for (let i = userMinArea; i < userMaxArea; i += interval) {
         yAxisCategories.push(`${i.toFixed(1)}-${(i + interval).toFixed(1)}`);
@@ -271,7 +269,6 @@ export function renderAreaHeatmap() {
             name: category,
             data: state.selectedVelocityRooms.map(roomType => {
                 const roomData = distributionData[roomType] || [];
-                // 過濾條件需同時滿足房型與面積範圍
                 return roomData.filter(area => area >= lower && area < upper && area >= userMinArea && area <= userMaxArea).length;
             })
         };
@@ -297,17 +294,19 @@ export function renderAreaHeatmap() {
                 useFillColorAsStroke: true,
                 colorScale: {
                     ranges: [{
-                        from: 0, to: 0, color: 'transparent', name: '0' // 0戶時設為透明
+                        from: 0, to: 0, color: 'transparent', name: '0 戶' // 0戶時設為透明
                     }, {
-                        from: 1, to: 5, color: '#fef08a', name: '1-5 戶'
+                        from: 1, to: 2, color: '#fef9c3', name: '1-2 戶' // 極淺黃
                     }, {
-                        from: 6, to: 10, color: '#fcd34d', name: '6-10 戶'
+                        from: 3, to: 5, color: '#fef08a', name: '3-5 戶' // 淺黃
                     }, {
-                        from: 11, to: 20, color: '#fb923c', name: '11-20 戶'
+                        from: 6, to: 10, color: '#fcd34d', name: '6-10 戶' // 金黃
                     }, {
-                        from: 21, to: 35, color: '#f97316', name: '21-35 戶'
+                        from: 11, to: 15, color: '#fbbf24', name: '11-15 戶' // 琥珀黃
                     }, {
-                        from: 36, to: 9999, color: '#dc2626', name: '> 35 戶'
+                        from: 16, to: 25, color: '#fb923c', name: '16-25 戶' // 橘色
+                    }, {
+                        from: 26, to: 9999, color: '#f97316', name: '> 25 戶' // 深橘
                     }]
                 }
             }
@@ -357,20 +356,30 @@ export function renderAreaHeatmap() {
     state.areaHeatmapChart = new ApexCharts(dom.areaHeatmapChart, options);
     state.areaHeatmapChart.render();
 }
-// ▲▲▲ 修改/新增結束 ▲▲▲
 
 export function renderSalesVelocityReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
     if (allRoomTypes && allRoomTypes.length > 0) {
-        state.selectedVelocityRooms = [...allRoomTypes];
-        dom.velocityRoomFilterContainer.innerHTML = allRoomTypes.map(roomType => `<button class="capsule-btn active" data-room-type="${roomType}">${roomType}</button>`).join('');
+        // 預設選擇 1房, 2房, 3房
+        const defaultSelections = ['1房', '2房', '3房'];
+        state.selectedVelocityRooms = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
+        // 如果預設的房型都不存在，就全選
+        if (state.selectedVelocityRooms.length === 0) {
+             state.selectedVelocityRooms = [...allRoomTypes];
+        }
+
+        dom.velocityRoomFilterContainer.innerHTML = allRoomTypes.map(roomType => {
+            const isActive = state.selectedVelocityRooms.includes(roomType);
+            return `<button class="capsule-btn ${isActive ? 'active' : ''}" data-room-type="${roomType}">${roomType}</button>`;
+        }).join('');
     } else {
         dom.velocityRoomFilterContainer.innerHTML = '<p class="text-gray-500 text-sm">無可用房型</p>';
     }
     renderVelocityTable();
     renderAreaHeatmap();
 }
+// ▲▲▲ 修改/新增結束 ▲▲▲
 
 export function renderVelocityTable() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
