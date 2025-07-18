@@ -19,7 +19,7 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
     const ranges = [{
-        from: 0, to: 0, color: '#1a1d29', name: '0 戶' // 修改此行：設為與背景色相同的實心色 (透明度0%)
+        from: 0, to: 0, color: '#FFFFFF', name: '0 戶' // 修改此行：設為與背景色相同的實心色 (透明度0%)
     }];
 
     if (maxValue <= 0) return ranges;
