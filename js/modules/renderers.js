@@ -18,7 +18,7 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
  */
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
-    // ▼▼▼ 需求 #1 修改：將 0 戶的顏色從白色 '#FFFFFF' 改為與背景相同的 '#1a1d29' ▼▼▼
+    // 修正 #1: 將 0 戶的顏色改為背景色
     const ranges = [{
         from: 0, to: 0, color: '#1a1d29', name: '0 戶'
     }];
@@ -36,9 +36,11 @@ function generateColorRanges(maxValue) {
         const effectiveTo = Math.min(to, maxValue);
         const labelName = from === effectiveTo ? `${from} 戶` : `${from}-${effectiveTo} 戶`;
 
+        // ▼▼▼ 關鍵 Bug 修正 #2：將區間的結束值 (to) 增加一個微小的數字 (0.1) ▼▼▼
+        // 這可以確保整數邊界值 (例如 3) 能被正確地包含在區間內進行 hover 判斷
         ranges.push({
             from: from,
-            to: effectiveTo,
+            to: effectiveTo + 0.1, 
             color: palette[i],
             name: labelName
         });
@@ -338,9 +340,9 @@ export function renderAreaHeatmap() {
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb'
         },
-        // ▼▼▼ 需求 #2 BUG修正：停用DataLabel解決Hover區間不準確的問題 ▼▼▼
+        // ▼▼▼ 需求 #1 修正：重新啟用數字標籤 ▼▼▼
         dataLabels: {
-            enabled: false,
+            enabled: true,
         },
         plotOptions: {
             heatmap: {
