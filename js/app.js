@@ -73,23 +73,35 @@ function initialize() {
     dom.analyzeHeatmapBtn.addEventListener('click', handlers.analyzeHeatmap);
     dom.backToGridBtn.addEventListener('click', handlers.handleBackToGrid);
     dom.heatmapLegendContainer.addEventListener('click', handlers.handleLegendClick);
+    
+    // ▼▼▼ 修改/新增開始 ▼▼▼
+    // 設定熱力圖控制項的預設值
+    dom.heatmapIntervalInput.value = 5;
+    dom.heatmapMinAreaInput.value = 8;
+    dom.heatmapMaxAreaInput.value = 100;
+    
+    // 為所有熱力圖控制項添加事件監聽
     dom.heatmapIntervalInput.addEventListener('change', renderers.renderAreaHeatmap);
+    dom.heatmapMinAreaInput.addEventListener('change', renderers.renderAreaHeatmap);
+    dom.heatmapMaxAreaInput.addEventListener('change', renderers.renderAreaHeatmap);
+    // ▲▲▲ 修改/新增結束 ▲▲▲
+
     dom.heatmapIntervalIncrementBtn.addEventListener('click', () => {
         const input = dom.heatmapIntervalInput;
-        const step = parseFloat(input.step) || 0.5;
-        const max = parseFloat(input.max) || 5.0;
+        const step = parseFloat(input.step) || 1;
+        const max = parseFloat(input.max) || 10;
         let newValue = (parseFloat(input.value) || 0) + step;
         if (newValue > max) newValue = max;
-        input.value = newValue.toFixed(1);
+        input.value = newValue;
         renderers.renderAreaHeatmap();
     });
     dom.heatmapIntervalDecrementBtn.addEventListener('click', () => {
         const input = dom.heatmapIntervalInput;
-        const step = parseFloat(input.step) || 0.5;
-        const min = parseFloat(input.min) || 0.5;
+        const step = parseFloat(input.step) || 1;
+        const min = parseFloat(input.min) || 1;
         let newValue = (parseFloat(input.value) || 0) - step;
         if (newValue < min) newValue = min;
-        input.value = newValue.toFixed(1);
+        input.value = newValue;
         renderers.renderAreaHeatmap();
     });
 
