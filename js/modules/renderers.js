@@ -375,6 +375,7 @@ export function renderAreaHeatmap() {
             heatmap: {
                 radius: 0,
                 useFillColorAsStroke: true,
+                enableShades: false, // <-- 新增這一行來關閉自動調色
                 colorScale: {
                     ranges: colorRanges
                 }
