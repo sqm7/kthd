@@ -30,7 +30,7 @@ function generateColorRanges(maxValue) {
     const ranges = [{
         from: 0, 
         to: 0, 
-        color: '#1a1d29', // 使用白色或一個非常淺的顏色代表無資料
+        color: 'transparent', // 使用白色或一個非常淺的顏色代表無資料
         name: '0 戶'
     }];
 
