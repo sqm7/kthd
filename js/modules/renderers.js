@@ -238,26 +238,29 @@ export function renderAreaHeatmap() {
 
     const distributionData = state.analysisDataCache.areaDistributionAnalysis;
     const interval = parseFloat(dom.heatmapIntervalInput.value);
+    const userMinArea = parseFloat(dom.heatmapMinAreaInput.value);
+    const userMaxArea = parseFloat(dom.heatmapMaxAreaInput.value);
 
     let allAreas = [];
     state.selectedVelocityRooms.forEach(roomType => {
         if (distributionData[roomType]) {
-            allAreas.push(...distributionData[roomType]);
+            // 根據使用者輸入的最小/最大坪數過濾資料
+            const filteredAreas = distributionData[roomType].filter(area => area >= userMinArea && area <= userMaxArea);
+            allAreas.push(...filteredAreas);
         }
     });
 
-    if (allAreas.length === 0 || isNaN(interval) || interval <= 0) {
-        dom.areaHeatmapChart.innerHTML = '<p class="text-gray-500 p-4 text-center">選取的房型無面積資料，或級距設定無效。</p>';
+    if (allAreas.length === 0 || isNaN(interval) || interval <= 0 || isNaN(userMinArea) || isNaN(userMaxArea) || userMinArea >= userMaxArea) {
+        dom.areaHeatmapChart.innerHTML = '<p class="text-gray-500 p-4 text-center">在此面積範圍內無資料，或範圍/級距設定無效。</p>';
         return;
     }
     
-    const minArea = Math.floor(Math.min(...allAreas) / interval) * interval;
-    const maxArea = Math.ceil(Math.max(...allAreas) / interval) * interval;
-
+    // Y 軸的級距直接使用使用者設定的範圍
     const yAxisCategories = [];
-    for (let i = minArea; i < maxArea; i += interval) {
+    for (let i = userMinArea; i < userMaxArea; i += interval) {
         yAxisCategories.push(`${i.toFixed(1)}-${(i + interval).toFixed(1)}`);
     }
+
     const baseHeight = 200; 
     const heightPerCategory = 25;
     const dynamicHeight = baseHeight + (yAxisCategories.length * heightPerCategory);
@@ -268,7 +271,8 @@ export function renderAreaHeatmap() {
             name: category,
             data: state.selectedVelocityRooms.map(roomType => {
                 const roomData = distributionData[roomType] || [];
-                return roomData.filter(area => area >= lower && area < upper).length;
+                // 過濾條件需同時滿足房型與面積範圍
+                return roomData.filter(area => area >= lower && area < upper && area >= userMinArea && area <= userMaxArea).length;
             })
         };
     });
@@ -283,27 +287,27 @@ export function renderAreaHeatmap() {
         },
         dataLabels: {
             enabled: true,
-            style: { colors: ['#1f2937'] }, // 將文字顏色改為深色以提高可讀性
+            style: { colors: ['#1f2937'] },
             formatter: (val) => val > 0 ? val : ''
         },
         plotOptions: {
             heatmap: {
-                shadeIntensity: 0.5, // 降低陰影強度，使其更平坦
-                radius: 0, // 移除圓角，使其更像方塊
-                useFillColorAsStroke: true, // 使用填充色作為邊框，增強一體感
+                shadeIntensity: 0.5,
+                radius: 0,
+                useFillColorAsStroke: true,
                 colorScale: {
                     ranges: [{
-                        from: 0, to: 0, color: '#252836', name: '0'
+                        from: 0, to: 0, color: 'transparent', name: '0' // 0戶時設為透明
                     }, {
-                        from: 1, to: 5, color: '#fef08a', name: '1-5 戶' // 淡黃
+                        from: 1, to: 5, color: '#fef08a', name: '1-5 戶'
                     }, {
-                        from: 6, to: 10, color: '#fcd34d', name: '6-10 戶' // 黃
+                        from: 6, to: 10, color: '#fcd34d', name: '6-10 戶'
                     }, {
-                        from: 11, to: 20, color: '#fb923c', name: '11-20 戶' // 橘
+                        from: 11, to: 20, color: '#fb923c', name: '11-20 戶'
                     }, {
-                        from: 21, to: 35, color: '#f97316', name: '21-35 戶' // 深橘
+                        from: 21, to: 35, color: '#f97316', name: '21-35 戶'
                     }, {
-                        from: 36, to: 9999, color: '#dc2626', name: '> 35 戶' // 紅
+                        from: 36, to: 9999, color: '#dc2626', name: '> 35 戶'
                     }]
                 }
             }
@@ -339,7 +343,7 @@ export function renderAreaHeatmap() {
             y: {
                 formatter: (val, { seriesIndex, dataPointIndex, w }) => {
                     const roomType = w.globals.labels[dataPointIndex];
-                    const totalInRoom = (distributionData[roomType] || []).length;
+                    const totalInRoom = (distributionData[roomType] || []).filter(area => area >= userMinArea && area <= userMaxArea).length;
                     const percentage = totalInRoom > 0 ? (val / totalInRoom * 100).toFixed(1) : 0;
                     return `${val} 戶 (${percentage}%)`;
                 }
