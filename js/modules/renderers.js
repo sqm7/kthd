@@ -322,7 +322,6 @@ export function renderAreaHeatmap() {
             if (count > maxValue) {
                 maxValue = count;
             }
-            // ▼▼▼ 修改開始 ▼▼▼
             // 需求#2: 當戶數為 0 時，回傳 null 而不是 0，讓圖表工具將其視為無資料格。
             return count > 0 ? count : null;
             // ▲▲▲ 修改結束 ▲▲▲
