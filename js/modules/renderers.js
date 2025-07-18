@@ -20,9 +20,9 @@ function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
     
     // ▼▼▼ 修改開始 ▼▼▼
-    // 雖然主要邏輯已改為傳遞 null，但保留此設定作為備用，確保任何意外出現的 0 值格子顏色與卡片背景融合。
+    // 需求#1：將 0 戶的顏色設定為與頁面最深層背景色完全相同的 #1a1d29，使其徹底隱形。
     const ranges = [{
-        from: 0, to: 0, color: '#252836', name: '0 戶'
+        from: 0, to: 0, color: '#1a1d29', name: '0 戶'
     }];
     // ▲▲▲ 修改結束 ▲▲▲
 
@@ -346,13 +346,14 @@ export function renderAreaHeatmap() {
         },
         // ▼▼▼ 修改/新增開始 ▼▼▼
         // 需求#1 & #2:
-        // 1. formatter: 當數值為0時，回傳空字串，徹底移除數字0的顯示，解決灰色疊層問題。
-        // 2. style.colors: 將數字顏色改為更清晰的 #e5e7eb (系統主要文字顏色)。
+        // 1. formatter: 當數值為 null 或 0 時，回傳空字串，徹底移除數字0的顯示，解決灰色疊層問題。
+        // 2. style.colors: 將數字顏色改為 #e5e7eb (淺色)，並透過 cssClass 添加文字陰影以提升可讀性。
         dataLabels: {
             enabled: true,
             style: {
-                colors: ['#1f2937'], // 改為深色以適應淺色背景
-                fontWeight: 'bold'
+                colors: ['#e5e7eb'], 
+                fontWeight: '500',
+                cssClass: 'heatmap-label-shadow' // 引用 style.css 中新增的 class
             },
             formatter: function(val) {
                 return (val === 0 || val === null) ? '' : val;
