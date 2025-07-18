@@ -7,7 +7,6 @@ import * as ui from './ui.js';
 import * as renderers from './renderers.js';
 import { districtData, countyCodeMap } from './config.js';
 
-// Main data fetching and analysis functions
 export async function mainFetchData() {
     ui.showLoading('查詢中，請稍候...');
     try {
