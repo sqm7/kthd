@@ -207,16 +207,26 @@
              <div id="velocity-table-container" class="overflow-x-auto"></div>
 
             <div class="report-header mt-8">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <h3 class="report-section-title mb-2 sm:mb-0">房型面積分佈熱力圖</h3>
-                    <div class="flex items-center gap-4">
-                        <label for="heatmap-interval-input" class="text-sm font-medium text-gray-300 whitespace-nowrap">面積級距 (坪):</label>
-                        <div class="number-input-container">
-                            <button id="heatmap-interval-decrement" class="number-input-btn">-</button>
-                            <input type="number" id="heatmap-interval-input" class="number-input-field" value="1.0" step="0.5" min="0.5" max="5.0">
-                            <button id="heatmap-interval-increment" class="number-input-btn">+</button>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h3 class="report-section-title mb-2 sm:mb-0 flex-shrink-0">房型面積分佈熱力圖</h3>
+                    <div class="flex flex-wrap items-end gap-4">
+                        <div>
+                            <label for="heatmap-min-area-input" class="block text-xs font-medium text-gray-400 mb-1">最小坪數</label>
+                            <input type="number" id="heatmap-min-area-input" class="form-input w-24 p-2 text-base rounded-md" value="8">
                         </div>
+                        <div>
+                            <label for="heatmap-max-area-input" class="block text-xs font-medium text-gray-400 mb-1">最大坪數</label>
+                            <input type="number" id="heatmap-max-area-input" class="form-input w-24 p-2 text-base rounded-md" value="100">
                         </div>
+                        <div>
+                            <label for="heatmap-interval-input" class="block text-xs font-medium text-gray-400 mb-1">面積級距(坪)</label>
+                            <div class="number-input-container">
+                                <button id="heatmap-interval-decrement" class="number-input-btn">-</button>
+                                <input type="number" id="heatmap-interval-input" class="number-input-field" value="5" step="1" min="1" max="10">
+                                <button id="heatmap-interval-increment" class="number-input-btn">+</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="area-heatmap-chart"></div>
