@@ -20,10 +20,9 @@ function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
     
     // ▼▼▼ 修改開始 ▼▼▼
-    // 需求#1：將 0 戶的顏色從原本的白色 ('#FFFFFF') 改為更融入背景的深色 ('#1f2937')，
-    // 這個顏色來自您的 style.css 中 '--color-form-bg' 變數，與背景協調但仍能區分。
+    // 雖然主要邏輯已改為傳遞 null，但保留此設定作為備用，確保任何意外出現的 0 值格子顏色與卡片背景融合。
     const ranges = [{
-        from: 0, to: 0, color: '#1f2937', name: '0 戶'
+        from: 0, to: 0, color: '#252836', name: '0 戶'
     }];
     // ▲▲▲ 修改結束 ▲▲▲
 
@@ -323,7 +322,10 @@ export function renderAreaHeatmap() {
             if (count > maxValue) {
                 maxValue = count;
             }
-            return count;
+            // ▼▼▼ 修改開始 ▼▼▼
+            // 需求#2: 當戶數為 0 時，回傳 null 而不是 0，讓圖表工具將其視為無資料格。
+            return count > 0 ? count : null;
+            // ▲▲▲ 修改結束 ▲▲▲
         });
         return {
             name: category,
@@ -343,13 +345,17 @@ export function renderAreaHeatmap() {
             foreColor: '#e5e7eb'
         },
         // ▼▼▼ 修改/新增開始 ▼▼▼
-        // 需求#2 & #3: 啟用數字標籤(dataLabels)並設定其顏色。
-        // 根據您的需求，我將 enabled 改回 true 來顯示數字，並新增 style 屬性將文字顏色設定為 #9ca3af。
-        // 這個顏色值 (--color-text-dark) 來自您的 style.css，能很好地融入現有配色。
+        // 需求#1 & #2:
+        // 1. formatter: 當數值為0時，回傳空字串，徹底移除數字0的顯示，解決灰色疊層問題。
+        // 2. style.colors: 將數字顏色改為更清晰的 #e5e7eb (系統主要文字顏色)。
         dataLabels: {
             enabled: true,
             style: {
-                colors: ['#9ca3af']
+                colors: ['#1f2937'], // 改為深色以適應淺色背景
+                fontWeight: 'bold'
+            },
+            formatter: function(val) {
+                return (val === 0 || val === null) ? '' : val;
             }
         },
         // ▲▲▲ 修改/新增結束 ▲▲▲
@@ -392,7 +398,7 @@ export function renderAreaHeatmap() {
             theme: 'dark',
             y: {
                 formatter: (val) => {
-                    if (val === 0) return '無成交紀錄';
+                    if (val === 0 || val === null) return '無成交紀錄';
                     return `${val} 戶`;
                 }
             }
