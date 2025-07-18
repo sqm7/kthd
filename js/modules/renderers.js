@@ -18,8 +18,9 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
  */
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
+    // ▼▼▼ 需求 #1 修改：將 0 戶的顏色從白色 '#FFFFFF' 改為與背景相同的 '#1a1d29' ▼▼▼
     const ranges = [{
-        from: 0, to: 0, color: '#FFFFFF', name: '0 戶'
+        from: 0, to: 0, color: '#1a1d29', name: '0 戶'
     }];
 
     if (maxValue <= 0) return ranges;
@@ -33,7 +34,6 @@ function generateColorRanges(maxValue) {
         if (from > maxValue) break;
         
         const effectiveTo = Math.min(to, maxValue);
-        // ▼▼▼ BUG修正#1：修正圖例顯示 ▼▼▼
         const labelName = from === effectiveTo ? `${from} 戶` : `${from}-${effectiveTo} 戶`;
 
         ranges.push({
@@ -338,9 +338,9 @@ export function renderAreaHeatmap() {
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb'
         },
-        // ▼▼▼ BUG修正#2：停用DataLabel解決Hover問題 ▼▼▼
+        // ▼▼▼ 需求 #2 BUG修正：停用DataLabel解決Hover區間不準確的問題 ▼▼▼
         dataLabels: {
-            enabled: true, // 將這裡從 false 改回 true
+            enabled: false,
         },
         plotOptions: {
             heatmap: {
