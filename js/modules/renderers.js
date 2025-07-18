@@ -24,7 +24,7 @@ function generateColorRanges(maxValue) {
 
     if (maxValue <= 0) return ranges;
 
-    const steps = [1, 2, 5, 10, 20, 35, 50, 100, 200];
+    const steps = [3, 5, 10, 20, 35, 50, 100, 200];
     let lastStep = 0;
 
     for (let i = 0; i < steps.length; i++) {
