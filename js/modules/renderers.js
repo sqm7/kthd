@@ -345,7 +345,6 @@ export function renderAreaHeatmap() {
         },
         plotOptions: {
             heatmap: {
-                shadeIntensity: 0.5,
                 radius: 0,
                 useFillColorAsStroke: true, // 【修正】改回 true，移除多餘框線
                 colorScale: {
