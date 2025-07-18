@@ -16,47 +16,76 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
  * @param {number} maxValue - 資料中的最大值
  * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
  */
+/**
+ * @FINAL
+ * 動態生成熱力圖的顏色區間 (簡化標籤版)
+ * @param {number} maxValue - 資料中的最大值
+ * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
+ */
 function generateColorRanges(maxValue) {
+    // 定義一個從淺黃到深紅的顏色梯度
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
+    
+    // 初始化區間陣列，第一個區間固定為 0 戶
     const ranges = [{
-        from: 0, to: 0, color: '#FFFFFF', name: '0 戶'
+        from: 0, 
+        to: 0, 
+        color: '#FFFFFF', // 使用白色或一個非常淺的顏色代表無資料
+        name: '0 戶'
     }];
 
+    // 如果最大值為 0 或更小，直接返回初始區間
     if (maxValue <= 0) return ranges;
 
+    // 定義區間的分割點，可以根據數據分佈調整
     const steps = [3, 5, 10, 20, 35, 50, 100, 200];
     let lastStep = 0;
 
+    // 遍歷分割點，生成對應的顏色區間
     for (let i = 0; i < steps.length; i++) {
         const from = lastStep + 1;
         const to = steps[i];
+
+        // 如果起始點已經超過了資料最大值，就停止生成
         if (from > maxValue) break;
         
+        // 確保區間的終點不會超過實際的最大值
         const effectiveTo = Math.min(to, maxValue);
-        // ▼▼▼ BUG修正#1：修正圖例顯示 ▼▼▼
+        
+        // 產生圖例標籤文字，如果區間頭尾相同，只顯示單一數字
         const labelName = from === effectiveTo ? `${from} 戶` : `${from}-${effectiveTo} 戶`;
+
+        // ▼▼▼ 【核心修正】 ▼▼▼
+        // 為了處理 ApexCharts 在滑鼠互動時將 'to' 視為 "小於" (<) 而非 "小於等於" (<=) 的邊界問題，
+        // 我們將區間的結束值微調增加 0.9。
+        // 這樣可以確保當 effectiveTo 是 3 時，to 的值變為 3.9，
+        // 圖表在做整數比較時，數值為 3 的格子就能被正確地包含在篩選範圍內。
+        // 這個技巧不會影響顏色的渲染，但能修正互動篩選的行為。
+        const inclusiveTo = effectiveTo + 0.9;
 
         ranges.push({
             from: from,
-            to: effectiveTo,
-            color: palette[i],
+            to: inclusiveTo, // 使用修正後的值
+            color: palette[i], // 從預設的顏色盤中選取顏色
             name: labelName
         });
+        
+        // 更新下一個區間的起始點
         lastStep = effectiveTo;
     }
     
+    // 如果最大值超過了最後一個分割點，為剩餘的範圍新增一個區間
     if (maxValue > lastStep) {
         ranges.push({
             from: lastStep + 1,
-            to: maxValue,
-            color: palette[palette.length - 1],
+            to: maxValue, // 最後一個區間直接使用最大值即可
+            color: palette[palette.length - 1], // 使用顏色盤中最後一個 (最深的) 顏色
             name: `> ${lastStep} 戶`
         });
     }
 
     return ranges;
 }
-
 
 export function renderHeatmapLegends() {
     dom.heatmapColorLegend.innerHTML = Object.entries(heatmapColorMapping).map(([key, {label, color}]) => ` <div class="legend-item" data-filter-type="premium" data-filter-value="${key}"> <span class="color-legend-swatch" style="background-color: ${color};"></span> <span>${label}</span> </div> `).join('');
