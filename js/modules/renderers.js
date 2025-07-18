@@ -340,7 +340,7 @@ export function renderAreaHeatmap() {
         },
         // ▼▼▼ BUG修正#2：停用DataLabel解決Hover問題 ▼▼▼
         dataLabels: {
-            enabled: false
+            enabled: true, // 將這裡從 false 改回 true
         },
         plotOptions: {
             heatmap: {
