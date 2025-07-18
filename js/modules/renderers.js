@@ -11,7 +11,7 @@ function getPremiumCategory(premium) { if (premium === null) return 'none'; if (
 function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; const category = getPremiumCategory(premium); return heatmapColorMapping[category] ? heatmapColorMapping[category].color : 'rgba(34, 197, 94, 0.2)'; }
 
 /**
- * @NEW
+ * @FINAL
  * 動態生成熱力圖的顏色區間
  * @param {number} maxValue - 資料中的最大值
  * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
@@ -19,44 +19,36 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
     const ranges = [{
-        from: 0, to: 0, color: '#1a1d29', name: '0 戶'
+        from: 0, to: 0, color: '#1a1d29', name: '0 戶' // 使用頁面底色，確保視覺上消失
     }];
 
     if (maxValue <= 0) return ranges;
 
-    // 如果最大值很小，使用更細緻的固定級距
-    if (maxValue <= 50) {
-        if (maxValue >= 1) ranges.push({ from: 1, to: 2, color: palette[0], name: '1-2 戶' });
-        if (maxValue >= 3) ranges.push({ from: 3, to: 5, color: palette[1], name: '3-5 戶' });
-        if (maxValue >= 6) ranges.push({ from: 6, to: 10, color: palette[2], name: '6-10 戶' });
-        if (maxValue >= 11) ranges.push({ from: 11, to: 20, color: palette[4], name: '11-20 戶' });
-        if (maxValue >= 21) ranges.push({ from: 21, to: 35, color: palette[6], name: '21-35 戶' });
-        if (maxValue >= 36) ranges.push({ from: 36, to: 50, color: palette[8], name: '> 35 戶' });
-        return ranges;
-    }
-
-    // 如果最大值較大，則動態生成級距
-    const numSteps = Math.min(palette.length, Math.floor(Math.log2(maxValue)) + 2);
+    // 根據最大值決定級距策略
+    const steps = [1, 2, 5, 10, 20, 35, 50, 100, 200];
     let lastStep = 0;
 
-    for (let i = 0; i < numSteps; i++) {
+    for (let i = 0; i < steps.length; i++) {
         const from = lastStep + 1;
-        let to;
-        if (i === numSteps - 1) {
-            to = maxValue;
-        } else {
-            const stepSize = Math.ceil((maxValue / numSteps) * (i + 1));
-            to = Math.round(from + stepSize / numSteps);
-        }
-        to = Math.max(from, to);
+        const to = steps[i];
+        if (from > maxValue) break;
         
         ranges.push({
             from: from,
-            to: to,
+            to: Math.min(to, maxValue),
             color: palette[i],
-            name: (i === numSteps - 1) ? `> ${lastStep} 戶` : `${from}-${to} 戶`
+            name: `${from}-${Math.min(to, maxValue)} 戶`
         });
-        lastStep = to;
+        lastStep = Math.min(to, maxValue);
+    }
+    
+    if (maxValue > lastStep) {
+        ranges.push({
+            from: lastStep + 1,
+            to: maxValue,
+            color: palette[palette.length - 1],
+            name: `> ${lastStep} 戶`
+        });
     }
 
     return ranges;
@@ -335,6 +327,18 @@ export function renderAreaHeatmap() {
 
     // 動態生成顏色區間
     const colorRanges = generateColorRanges(maxValue);
+    
+    // 為最高的區間加上百分位數
+    const allNonZeroCounts = seriesData.flatMap(s => s.data).filter(c => c > 0);
+    if (colorRanges.length > 1 && allNonZeroCounts.length > 0) {
+        const lastRange = colorRanges[colorRanges.length - 1];
+        const threshold = lastRange.from;
+        const countAboveThreshold = allNonZeroCounts.filter(c => c >= threshold).length;
+        const percentile = (countAboveThreshold / allNonZeroCounts.length) * 100;
+        if (percentile <= 50) { // 只在佔比較小時顯示，較有意義
+             lastRange.name = `${lastRange.name} (Top ${percentile.toFixed(1)}%)`;
+        }
+    }
 
     const options = {
         series: seriesData,
@@ -357,7 +361,7 @@ export function renderAreaHeatmap() {
             heatmap: {
                 shadeIntensity: 0.5,
                 radius: 0,
-                useFillColorAsStroke: true,
+                useFillColorAsStroke: false, // 關閉此項讓 0 值格的邊框消失
                 colorScale: {
                     ranges: colorRanges // 使用動態生成的顏色區間
                 }
