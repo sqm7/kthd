@@ -10,6 +10,59 @@ const specialTypeMapping = { storefront: { label: '店舖類型', icon: '<i clas
 function getPremiumCategory(premium) { if (premium === null) return 'none'; if (premium < 0) return 'discount'; if (premium === 0) return 'anchor'; if (premium > 5) return 'high'; if (premium > 2) return 'medium'; return 'low'; }
 function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; const category = getPremiumCategory(premium); return heatmapColorMapping[category] ? heatmapColorMapping[category].color : 'rgba(34, 197, 94, 0.2)'; }
 
+/**
+ * @NEW
+ * 動態生成熱力圖的顏色區間
+ * @param {number} maxValue - 資料中的最大值
+ * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
+ */
+function generateColorRanges(maxValue) {
+    const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
+    const ranges = [{
+        from: 0, to: 0, color: '#1a1d29', name: '0 戶'
+    }];
+
+    if (maxValue <= 0) return ranges;
+
+    // 如果最大值很小，使用更細緻的固定級距
+    if (maxValue <= 50) {
+        if (maxValue >= 1) ranges.push({ from: 1, to: 2, color: palette[0], name: '1-2 戶' });
+        if (maxValue >= 3) ranges.push({ from: 3, to: 5, color: palette[1], name: '3-5 戶' });
+        if (maxValue >= 6) ranges.push({ from: 6, to: 10, color: palette[2], name: '6-10 戶' });
+        if (maxValue >= 11) ranges.push({ from: 11, to: 20, color: palette[4], name: '11-20 戶' });
+        if (maxValue >= 21) ranges.push({ from: 21, to: 35, color: palette[6], name: '21-35 戶' });
+        if (maxValue >= 36) ranges.push({ from: 36, to: 50, color: palette[8], name: '> 35 戶' });
+        return ranges;
+    }
+
+    // 如果最大值較大，則動態生成級距
+    const numSteps = Math.min(palette.length, Math.floor(Math.log2(maxValue)) + 2);
+    let lastStep = 0;
+
+    for (let i = 0; i < numSteps; i++) {
+        const from = lastStep + 1;
+        let to;
+        if (i === numSteps - 1) {
+            to = maxValue;
+        } else {
+            const stepSize = Math.ceil((maxValue / numSteps) * (i + 1));
+            to = Math.round(from + stepSize / numSteps);
+        }
+        to = Math.max(from, to);
+        
+        ranges.push({
+            from: from,
+            to: to,
+            color: palette[i],
+            name: (i === numSteps - 1) ? `> ${lastStep} 戶` : `${from}-${to} 戶`
+        });
+        lastStep = to;
+    }
+
+    return ranges;
+}
+
+
 export function renderHeatmapLegends() {
     dom.heatmapColorLegend.innerHTML = Object.entries(heatmapColorMapping).map(([key, {label, color}]) => ` <div class="legend-item" data-filter-type="premium" data-filter-value="${key}"> <span class="color-legend-swatch" style="background-color: ${color};"></span> <span>${label}</span> </div> `).join('');
     dom.heatmapIconLegend.innerHTML = Object.entries(specialTypeMapping).map(([key, {label, icon}]) => ` <div class="legend-item" data-filter-type="special" data-filter-value="${key}"> <span class="icon-legend-symbol">${icon}</span> <span>${label}</span> </div> `).join('');
@@ -263,29 +316,41 @@ export function renderAreaHeatmap() {
     const heightPerCategory = 25;
     const dynamicHeight = baseHeight + (yAxisCategories.length * heightPerCategory);
 
+    let maxValue = 0;
     const seriesData = yAxisCategories.map(category => {
         const [lower, upper] = category.split('-').map(parseFloat);
+        const dataPoints = state.selectedVelocityRooms.map(roomType => {
+            const roomData = distributionData[roomType] || [];
+            const count = roomData.filter(area => area >= lower && area < upper && area >= userMinArea && area <= userMaxArea).length;
+            if (count > maxValue) {
+                maxValue = count;
+            }
+            return count;
+        });
         return {
             name: category,
-            data: state.selectedVelocityRooms.map(roomType => {
-                const roomData = distributionData[roomType] || [];
-                return roomData.filter(area => area >= lower && area < upper && area >= userMinArea && area <= userMaxArea).length;
-            })
+            data: dataPoints
         };
     });
+
+    // 動態生成顏色區間
+    const colorRanges = generateColorRanges(maxValue);
 
     const options = {
         series: seriesData,
         chart: {
             height: dynamicHeight, 
             type: 'heatmap',
-            background: 'transparent', // 確保圖表背景透明
+            background: 'transparent', // 確保圖表背景與父容器一致
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb'
         },
         dataLabels: {
             enabled: true,
-            style: { colors: ['#1f2937'] },
+            style: { 
+                colors: ['#111827'], // 使用深色文字確保可讀性
+                fontWeight: 'bold'
+            },
             formatter: (val) => val > 0 ? val : ''
         },
         plotOptions: {
@@ -294,27 +359,7 @@ export function renderAreaHeatmap() {
                 radius: 0,
                 useFillColorAsStroke: true,
                 colorScale: {
-                    ranges: [{
-                        from: 0, to: 0, color: '#1f2937', name: '0 戶' // 修改：使用背景色，使其看起來透明
-                    }, {
-                        from: 1, to: 2, color: '#fef9c3', name: '1-2 戶'     // 極淺黃
-                    }, {
-                        from: 3, to: 5, color: '#fef08a', name: '3-5 戶'     // 淺黃
-                    }, {
-                        from: 6, to: 10, color: '#fde047', name: '6-10 戶'   // 黃
-                    }, {
-                        from: 11, to: 20, color: '#facc15', name: '11-20 戶' // 金黃
-                    }, {
-                        from: 21, to: 35, color: '#fbbf24', name: '21-35 戶' // 琥珀黃
-                    }, {
-                        from: 36, to: 50, color: '#fb923c', name: '36-50 戶' // 淺橘
-                    }, {
-                        from: 51, to: 100, color: '#f97316', name: '51-100 戶' // 橘
-                    }, {
-                        from: 101, to: 200, color: '#ea580c', name: '101-200 戶' // 橘紅
-                    }, {
-                        from: 201, to: 9999, color: '#dc2626', name: '> 200 戶' // 紅
-                    }]
+                    ranges: colorRanges // 使用動態生成的顏色區間
                 }
             }
         },
@@ -348,10 +393,10 @@ export function renderAreaHeatmap() {
             theme: 'dark',
             y: {
                 formatter: (val, { seriesIndex, dataPointIndex, w }) => {
+                    if (val === 0) return '無成交紀錄';
                     const roomType = w.globals.labels[dataPointIndex];
                     const totalInRoom = (distributionData[roomType] || []).filter(area => area >= userMinArea && area <= userMaxArea).length;
                     const percentage = totalInRoom > 0 ? (val / totalInRoom * 100).toFixed(1) : 0;
-                    if (val === 0) return '無成交紀錄';
                     return `${val} 戶 (${percentage}%)`;
                 }
             }
