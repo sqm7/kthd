@@ -74,7 +74,6 @@ function initialize() {
     dom.backToGridBtn.addEventListener('click', handlers.handleBackToGrid);
     dom.heatmapLegendContainer.addEventListener('click', handlers.handleLegendClick);
     
-    // ▼▼▼ 修改/新增開始 ▼▼▼
     // 設定熱力圖控制項的預設值
     dom.heatmapIntervalInput.value = 5;
     dom.heatmapMinAreaInput.value = 8;
