@@ -11,21 +11,18 @@
     
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'dark-bg': '#1a1d29',
-            'dark-card': '#252836',
-            'cyan-accent': '#06b6d4',
-            'purple-accent': '#8b5cf6',
+    <script type="module">
+        import { THEME_COLORS } from './js/modules/config.js';
+
+        // 將顏色設定應用到 Tailwind
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: THEME_COLORS
+            }
           }
         }
-      }
-    }
     </script>
-    
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="p-4 md:p-8">
