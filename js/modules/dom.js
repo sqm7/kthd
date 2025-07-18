@@ -79,3 +79,6 @@ export const dom = {
     heatmapMaxAreaInput: document.getElementById('heatmap-max-area-input'),
     // ▲▲▲ 修改/新增結束 ▲▲▲
   };
+
+    // ▲▲▲ 修改/新增結束 ▲▲▲
+
