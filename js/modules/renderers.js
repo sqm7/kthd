@@ -225,6 +225,7 @@ export function renderParkingAnalysisReport() {
     }
 }
 
+// ▼▼▼ 修改/新增開始 ▼▼▼
 export function renderAreaHeatmap() {
     if (state.areaHeatmapChart) {
         state.areaHeatmapChart.destroy();
@@ -282,25 +283,27 @@ export function renderAreaHeatmap() {
         },
         dataLabels: {
             enabled: true,
-            style: { colors: ['#FFFFFF'] },
+            style: { colors: ['#1f2937'] }, // 將文字顏色改為深色以提高可讀性
             formatter: (val) => val > 0 ? val : ''
         },
         plotOptions: {
             heatmap: {
-                shadeIntensity: 0.7,
-                radius: 4,
-                useFillColorAsStroke: false, 
+                shadeIntensity: 0.5, // 降低陰影強度，使其更平坦
+                radius: 0, // 移除圓角，使其更像方塊
+                useFillColorAsStroke: true, // 使用填充色作為邊框，增強一體感
                 colorScale: {
                     ranges: [{
                         from: 0, to: 0, color: '#252836', name: '0'
                     }, {
-                        from: 1, to: 5, color: '#581c87', name: '1-5 戶' 
+                        from: 1, to: 5, color: '#fef08a', name: '1-5 戶' // 淡黃
                     }, {
-                        from: 6, to: 15, color: '#0c4a6e', name: '6-15 戶' 
+                        from: 6, to: 10, color: '#fcd34d', name: '6-10 戶' // 黃
                     }, {
-                        from: 16, to: 30, color: '#06b6d4', name: '16-30 戶'
+                        from: 11, to: 20, color: '#fb923c', name: '11-20 戶' // 橘
                     }, {
-                        from: 31, to: 9999, color: '#f59e0b', name: '> 30 戶'
+                        from: 21, to: 35, color: '#f97316', name: '21-35 戶' // 深橘
+                    }, {
+                        from: 36, to: 9999, color: '#dc2626', name: '> 35 戶' // 紅
                     }]
                 }
             }
@@ -350,6 +353,7 @@ export function renderAreaHeatmap() {
     state.areaHeatmapChart = new ApexCharts(dom.areaHeatmapChart, options);
     state.areaHeatmapChart.render();
 }
+// ▲▲▲ 修改/新增結束 ▲▲▲
 
 export function renderSalesVelocityReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
