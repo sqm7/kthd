@@ -369,8 +369,26 @@ export function renderAreaHeatmap() {
         },
         // ▼▼▼ BUG修正#2：停用DataLabel解決Hover問題 ▼▼▼
         dataLabels: {
-            enabled: true, // 將這裡從 false 改回 true
-        },
+    enabled: true,
+    style: {
+        colors: [function({ value }) {
+            // 當數值為 0 時，回傳透明色
+            if (value === 0) {
+                return 'transparent';
+            }
+            // 其他數值使用預設的亮色 (可自行調整)
+            return '#e5e7eb'; 
+        }]
+    },
+    // 您之前加入的 formatter 可以保留或移除，
+    // 因為上面的 style 設定已經能達到隱藏文字的效果。
+    formatter: function(val) {
+      if (val === 0) {
+        return '';
+      }
+      return val;
+    }
+},
         plotOptions: {
             heatmap: {
                 radius: 0,
