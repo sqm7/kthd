@@ -19,12 +19,11 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
     const ranges = [{
-        from: 0, to: 0, color: '#FFFFFF', name: '0 戶' // 修改此行：設為與背景色相同的實心色 (透明度0%)
+        from: 0, to: 0, color: '#FFFFFF', name: '0 戶'
     }];
 
     if (maxValue <= 0) return ranges;
 
-    // 固定級距策略，提供一致的視覺體驗
     const steps = [1, 2, 5, 10, 20, 35, 50, 100, 200];
     let lastStep = 0;
 
@@ -33,13 +32,17 @@ function generateColorRanges(maxValue) {
         const to = steps[i];
         if (from > maxValue) break;
         
+        const effectiveTo = Math.min(to, maxValue);
+        // ▼▼▼ BUG修正#1：修正圖例顯示 ▼▼▼
+        const labelName = from === effectiveTo ? `${from} 戶` : `${from}-${effectiveTo} 戶`;
+
         ranges.push({
             from: from,
-            to: Math.min(to, maxValue),
+            to: effectiveTo,
             color: palette[i],
-            name: `${from}-${Math.min(to, maxValue)} 戶`
+            name: labelName
         });
-        lastStep = Math.min(to, maxValue);
+        lastStep = effectiveTo;
     }
     
     if (maxValue > lastStep) {
@@ -335,18 +338,14 @@ export function renderAreaHeatmap() {
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb'
         },
+        // ▼▼▼ BUG修正#2：停用DataLabel解決Hover問題 ▼▼▼
         dataLabels: {
-            enabled: true,
-            style: { 
-                colors: ['#111827'],
-                fontWeight: 'bold'
-            },
-            formatter: (val) => val > 0 ? val : ''
+            enabled: false
         },
         plotOptions: {
             heatmap: {
                 radius: 0,
-                useFillColorAsStroke: true, // 【修正】改回 true，移除多餘框線
+                useFillColorAsStroke: true,
                 colorScale: {
                     ranges: colorRanges
                 }
