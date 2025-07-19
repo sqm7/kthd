@@ -4,7 +4,6 @@ import { dom } from './dom.js';
 import * as ui from './ui.js';
 import { state } from './state.js';
 
-// ▼▼▼ 修改/新增開始 ▼▼▼
 /**
  * 渲染熱力圖點擊後的詳細資料表格
  * @param {object} data - 包含詳細資料的物件 { details, roomType, areaRange }
@@ -48,7 +47,6 @@ function renderHeatmapDetailsTable({ details, roomType, areaRange }) {
 
     dom.heatmapDetailsContainer.innerHTML = tableHtml;
 }
-// ▲▲▲ 修改/新增結束 ▲▲▲
 
 // --- Heatmap related functions ---
 const heatmapColorMapping = { high: { label: '高度溢價 (> 5%)', color: 'rgba(244, 63, 94, 0.5)' }, medium: { label: '中度溢價 (2-5%)', color: 'rgba(234, 179, 8, 0.4)' }, low: { label: '微幅溢價 (0-2%)', color: 'rgba(34, 197, 94, 0.3)' }, discount: { label: '建案折價 (< 0%)', color: 'rgba(139, 92, 246, 0.4)' }, };
@@ -79,7 +77,8 @@ function generateColorRanges(maxValue) {
         if (from > maxValue) break;
         
         const effectiveTo = Math.min(to, maxValue);
-        const labelName = from === effectiveTo ? `${from} 戶` : `${from}-${effectiveTo} 戶`;
+        // ▼▼▼ BUG修正#1：修正圖例顯示 ▼▼▼
+        const labelName = from === effectiveTo ? `${from} 戶` : `戶數: ${from}-${effectiveTo}`;
 
         ranges.push({
             from: from,
@@ -378,7 +377,6 @@ export function renderAreaHeatmap() {
             background: 'transparent',
             toolbar: { show: true, tools: { download: true } },
             foreColor: '#e5e7eb',
-            // ▼▼▼ 修改/新增開始 ▼▼▼
             events: {
                 dataPointSelection: (event, chartContext, config) => {
                     const { seriesIndex, dataPointIndex } = config;
@@ -432,7 +430,6 @@ export function renderAreaHeatmap() {
                     renderHeatmapDetailsTable({ details, roomType, areaRange });
                 }
             }
-            // ▲▲▲ 修改/新增結束 ▲▲▲
         },
         plotOptions: {
             heatmap: {
