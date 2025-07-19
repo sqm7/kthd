@@ -370,6 +370,16 @@ export function renderAreaHeatmap() {
         // ▼▼▼ BUG修正#2：停用DataLabel解決Hover問題 ▼▼▼
         dataLabels: {
     enabled: true,
+            // --- ▼▼▼ 新增這個 dropShadow 物件 ▼▼▼ ---
+    dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 1,
+        color: '#000',
+        opacity: 0.6
+    },
+    // --- ▲▲▲ 新增結束 ▲▲▲ ---
     style: {
         colors: [function({ value }) {
             // 當數值為 0 時，回傳透明色
