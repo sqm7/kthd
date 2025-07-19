@@ -4,6 +4,52 @@ import { dom } from './dom.js';
 import * as ui from './ui.js';
 import { state } from './state.js';
 
+// ▼▼▼ 修改/新增開始 ▼▼▼
+/**
+ * 渲染熱力圖點擊後的詳細資料表格
+ * @param {object} data - 包含詳細資料的物件 { details, roomType, areaRange }
+ */
+function renderHeatmapDetailsTable({ details, roomType, areaRange }) {
+    if (!details || details.length === 0) {
+        dom.heatmapDetailsContainer.innerHTML = `<p class="text-gray-500 text-center">在 ${roomType} / ${areaRange} 坪的範圍內沒有找到詳細交易資料。</p>`;
+        return;
+    }
+
+    let tableHtml = `
+        <h4 class="text-md font-semibold text-cyan-400 mb-2">詳細數據</h4>
+        <p class="text-sm text-gray-400 mb-4">房型: <span class="font-bold">${roomType}</span> | 面積區間: <span class="font-bold">${areaRange} 坪</span></p>
+        <div class="overflow-y-auto" style="max-height: 550px;">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-800">
+                    <tr>
+                        <th class="p-2">建案名稱</th>
+                        <th class="p-2 text-center">總價區間 (萬)</th>
+                        <th class="p-2 text-center">總價中位數 (萬)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    details.forEach(item => {
+        tableHtml += `
+            <tr class="border-b border-gray-700 hover:bg-dark-card">
+                <td class="p-2">${item.projectName} (${item.count}戶)</td>
+                <td class="p-2 text-center">${ui.formatNumber(item.priceRange.min, 0)} - ${ui.formatNumber(item.priceRange.max, 0)}</td>
+                <td class="p-2 text-center font-bold">${ui.formatNumber(item.medianPrice, 0)}</td>
+            </tr>
+        `;
+    });
+
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    dom.heatmapDetailsContainer.innerHTML = tableHtml;
+}
+// ▲▲▲ 修改/新增結束 ▲▲▲
+
 // --- Heatmap related functions ---
 const heatmapColorMapping = { high: { label: '高度溢價 (> 5%)', color: 'rgba(244, 63, 94, 0.5)' }, medium: { label: '中度溢價 (2-5%)', color: 'rgba(234, 179, 8, 0.4)' }, low: { label: '微幅溢價 (0-2%)', color: 'rgba(34, 197, 94, 0.3)' }, discount: { label: '建案折價 (< 0%)', color: 'rgba(139, 92, 246, 0.4)' }, };
 const specialTypeMapping = { storefront: { label: '店舖類型', icon: '<i class="fas fa-store"></i>' }, anchor: { label: '基準戶', icon: '<i class="fas fa-anchor"></i>' }, terrace: { label: '露台戶', icon: '<i class="fas fa-seedling"></i>' }, insider: { label: '親友/員工', icon: '<i class="fas fa-users"></i>' }, };
@@ -16,76 +62,46 @@ function getHeatmapColor(premium) { if (premium === null) return '#1f2937'; cons
  * @param {number} maxValue - 資料中的最大值
  * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
  */
-/**
- * @FINAL
- * 動態生成熱力圖的顏色區間 (簡化標籤版)
- * @param {number} maxValue - 資料中的最大值
- * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
- */
 function generateColorRanges(maxValue) {
-    // 定義一個從淺黃到深紅的顏色梯度
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
-    
-    // 初始化區間陣列，第一個區間固定為 0 戶
     const ranges = [{
-        from: 0, 
-        to: 0, 
-        color: '#252836', // 使用白色或一個非常淺的顏色代表無資料
-        name: '0 戶'
+        from: 0, to: 0, color: '#252836', name: '0 戶'
     }];
 
-    // 如果最大值為 0 或更小，直接返回初始區間
     if (maxValue <= 0) return ranges;
 
-    // 定義區間的分割點，可以根據數據分佈調整
     const steps = [3, 5, 10, 20, 35, 50, 100, 200];
     let lastStep = 0;
 
-    // 遍歷分割點，生成對應的顏色區間
     for (let i = 0; i < steps.length; i++) {
         const from = lastStep + 1;
         const to = steps[i];
-
-        // 如果起始點已經超過了資料最大值，就停止生成
         if (from > maxValue) break;
         
-        // 確保區間的終點不會超過實際的最大值
         const effectiveTo = Math.min(to, maxValue);
-        
-        // 產生圖例標籤文字，如果區間頭尾相同，只顯示單一數字
         const labelName = from === effectiveTo ? `${from} 戶` : `${from}-${effectiveTo} 戶`;
-
-        // ▼▼▼ 【核心修正】 ▼▼▼
-        // 為了處理 ApexCharts 在滑鼠互動時將 'to' 視為 "小於" (<) 而非 "小於等於" (<=) 的邊界問題，
-        // 我們將區間的結束值微調增加 0.9。
-        // 這樣可以確保當 effectiveTo 是 3 時，to 的值變為 3.9，
-        // 圖表在做整數比較時，數值為 3 的格子就能被正確地包含在篩選範圍內。
-        // 這個技巧不會影響顏色的渲染，但能修正互動篩選的行為。
-        const inclusiveTo = effectiveTo + 0.9;
 
         ranges.push({
             from: from,
-            to: inclusiveTo, // 使用修正後的值
-            color: palette[i], // 從預設的顏色盤中選取顏色
+            to: effectiveTo,
+            color: palette[i],
             name: labelName
         });
-        
-        // 更新下一個區間的起始點
         lastStep = effectiveTo;
     }
     
-    // 如果最大值超過了最後一個分割點，為剩餘的範圍新增一個區間
     if (maxValue > lastStep) {
         ranges.push({
             from: lastStep + 1,
-            to: maxValue, // 最後一個區間直接使用最大值即可
-            color: palette[palette.length - 1], // 使用顏色盤中最後一個 (最深的) 顏色
+            to: maxValue,
+            color: palette[palette.length - 1],
             name: `> ${lastStep} 戶`
         });
     }
 
     return ranges;
 }
+
 
 export function renderHeatmapLegends() {
     dom.heatmapColorLegend.innerHTML = Object.entries(heatmapColorMapping).map(([key, {label, color}]) => ` <div class="legend-item" data-filter-type="premium" data-filter-value="${key}"> <span class="color-legend-swatch" style="background-color: ${color};"></span> <span>${label}</span> </div> `).join('');
@@ -335,10 +351,6 @@ export function renderAreaHeatmap() {
         yAxisCategories.push(`${i.toFixed(1)}-${(i + interval).toFixed(1)}`);
     }
 
-    const baseHeight = 200; 
-    const heightPerCategory = 25;
-    const dynamicHeight = baseHeight + (yAxisCategories.length * heightPerCategory);
-
     let maxValue = 0;
     const seriesData = yAxisCategories.map(category => {
         const [lower, upper] = category.split('-').map(parseFloat);
@@ -361,52 +373,100 @@ export function renderAreaHeatmap() {
     const options = {
         series: seriesData,
         chart: {
-            height: dynamicHeight, 
+            height: 600,
             type: 'heatmap',
             background: 'transparent',
             toolbar: { show: true, tools: { download: true } },
-            foreColor: '#e5e7eb'
-        },
-        // ▼▼▼ BUG修正#2：停用DataLabel解決Hover問題 ▼▼▼
-        dataLabels: {
-    enabled: true,
-            // --- ▼▼▼ 新增這個 dropShadow 物件 ▼▼▼ ---
-    dropShadow: {
-        enabled: true,
-        top: 1,
-        left: 1,
-        blur: 1,
-        color: '#000',
-        opacity: 0.6
-    },
-    // --- ▲▲▲ 新增結束 ▲▲▲ ---
-    style: {
-        colors: [function({ value }) {
-            // 當數值為 0 時，回傳透明色
-            if (value === 0) {
-                return 'transparent';
+            foreColor: '#e5e7eb',
+            // ▼▼▼ 修改/新增開始 ▼▼▼
+            events: {
+                dataPointSelection: (event, chartContext, config) => {
+                    const { seriesIndex, dataPointIndex } = config;
+                    if (seriesIndex < 0 || dataPointIndex < 0) return;
+
+                    const areaRange = config.w.globals.seriesNames[seriesIndex];
+                    const roomType = state.selectedVelocityRooms[dataPointIndex];
+                    const [lower, upper] = areaRange.split('-').map(parseFloat);
+                    
+                    const getRoomCategory = (record) => {
+                        const rooms = record['房數'];
+                        const buildingType = (record['建物型態'] || '');
+                        if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
+                        if (rooms === 0) {
+                            if (buildingType.includes('辦公') || buildingType.includes('商業') || buildingType.includes('事務所') || buildingType.includes('店舖') || buildingType.includes('店面') || buildingType.includes('工廠') || buildingType.includes('倉庫')) return '其他';
+                            return '套房';
+                        }
+                        if (rooms >= 5) return '5房以上';
+                        return `${rooms}房`;
+                    };
+
+                    const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
+                        const txRoomType = getRoomCategory(tx);
+                        const txArea = tx['房屋面積(坪)'];
+                        return txRoomType === roomType && txArea >= lower && txArea < upper;
+                    });
+
+                    const groupedByProject = matchingTransactions.reduce((acc, tx) => {
+                        const projectName = tx['建案名稱'];
+                        if (!acc[projectName]) {
+                            acc[projectName] = { prices: [] };
+                        }
+                        acc[projectName].prices.push(tx['房屋總價(萬)']);
+                        return acc;
+                    }, {});
+                    
+                    const details = Object.entries(groupedByProject).map(([projectName, data]) => {
+                        const prices = data.prices.sort((a, b) => a - b);
+                        const medianPrice = prices.length % 2 === 0
+                            ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
+                            : prices[Math.floor(prices.length / 2)];
+                        
+                        return {
+                            projectName: projectName,
+                            count: prices.length,
+                            priceRange: { min: prices[0], max: prices[prices.length - 1] },
+                            medianPrice: medianPrice,
+                        };
+                    }).sort((a, b) => b.count - a.count);
+                    
+                    renderHeatmapDetailsTable({ details, roomType, areaRange });
+                }
             }
-            // 其他數值使用預設的亮色 (可自行調整)
-            return '#e5e7eb'; 
-        }]
-    },
-    // 您之前加入的 formatter 可以保留或移除，
-    // 因為上面的 style 設定已經能達到隱藏文字的效果。
-    formatter: function(val) {
-      if (val === 0) {
-        return '';
-      }
-      return val;
-    }
-},
+            // ▲▲▲ 修改/新增結束 ▲▲▲
+        },
         plotOptions: {
             heatmap: {
                 radius: 0,
                 useFillColorAsStroke: true,
-                enableShades: false, // <-- 新增這一行來關閉自動調色
+                enableShades: false,
                 colorScale: {
                     ranges: colorRanges
                 }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            dropShadow: {
+                enabled: true,
+                top: 1,
+                left: 1,
+                blur: 1,
+                color: '#000',
+                opacity: 0.6
+            },
+            style: {
+                colors: [function({ value }) {
+                    if (value === 0) {
+                        return 'transparent';
+                    }
+                    return '#e5e7eb'; 
+                }]
+            },
+            formatter: function(val) {
+                if (val === 0) {
+                    return '';
+                }
+                return val;
             }
         },
         xaxis: {
