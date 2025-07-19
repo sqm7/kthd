@@ -14,6 +14,7 @@
     <script type="module">
         import { THEME_COLORS } from './js/modules/config.js';
 
+        // 將顏色設定應用到 Tailwind
         tailwind.config = {
           theme: {
             extend: {
@@ -228,9 +229,14 @@
                     </div>
                 </div>
             </div>
-            <div id="area-heatmap-chart"></div>
-
-        </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                <div id="area-heatmap-chart">
+                    </div>
+                <div id="heatmap-details-container" class="glass-card rounded-xl p-4 self-start">
+                    <p class="text-gray-500 text-center">點擊左側熱力圖的格子以查看詳細數據</p>
+                </div>
+            </div>
+            </div>
 
         <div id="price-grid-report-content" class="tab-content">
           
