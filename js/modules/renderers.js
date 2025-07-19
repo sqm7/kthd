@@ -82,7 +82,7 @@ function generateColorRanges(maxValue) {
 
         ranges.push({
             from: from,
-            to: effectiveTo,
+            to: effectiveTo+0.9,
             color: palette[i],
             name: labelName
         });
