@@ -21,6 +21,7 @@ import {
     clearSelectedProjects,
     handleGlobalClick,
     switchAverageType,
+    handlePriceBandRoomFilterClick, // 引入新的事件處理函式
     handleVelocityRoomFilterClick,
     handleVelocitySubTabClick,
     handlePriceGridProjectFilterClick,
@@ -121,6 +122,11 @@ function initialize() {
     });
     
     // --- 去化分析與垂直水平分析相關事件 ---
+    
+    // ▼▼▼ 新增事件監聽器 ▼▼▼
+    dom.priceBandRoomFilterContainer.addEventListener('click', handlePriceBandRoomFilterClick);
+    // ▲▲▲ 新增結束 ▲▲▲
+    
     dom.velocityRoomFilterContainer.addEventListener('click', handleVelocityRoomFilterClick);
     dom.velocitySubTabsContainer.addEventListener('click', handleVelocitySubTabClick);
     dom.priceGridProjectFilterContainer.addEventListener('click', handlePriceGridProjectFilterClick);
