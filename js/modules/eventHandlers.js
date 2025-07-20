@@ -276,6 +276,7 @@ export function handleVelocityRoomFilterClick(e) {
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
     state.selectedVelocityRooms.sort((a, b) => allRoomTypes.indexOf(a) - allRoomTypes.indexOf(b));
     tableRenderer.renderVelocityTable();
+    chartRenderer.renderSalesVelocityChart(); // 新增呼叫
     chartRenderer.renderAreaHeatmap(); 
 }
 
@@ -286,6 +287,7 @@ export function handleVelocitySubTabClick(e) {
     dom.velocitySubTabsContainer.querySelector('.active').classList.remove('active');
     button.classList.add('active');
     tableRenderer.renderVelocityTable();
+    chartRenderer.renderSalesVelocityChart(); // 新增呼叫
     chartRenderer.renderAreaHeatmap();
 }
 
