@@ -4,6 +4,112 @@ import { dom } from '../dom.js';
 import { state } from '../state.js';
 import { renderHeatmapDetailsTable } from './tables.js';
 
+// --- 全局圖表實例 ---
+let salesVelocityChartInstance = null;
+
+
+/**
+ * 渲染銷售速度趨勢圖 (新增函式)
+ * 圖表會根據目前的房型選擇和時間維度動態更新
+ */
+export function renderSalesVelocityChart() {
+    if (salesVelocityChartInstance) {
+        salesVelocityChartInstance.destroy();
+        salesVelocityChartInstance = null;
+    }
+    
+    if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis || state.selectedVelocityRooms.length === 0) {
+        dom.salesVelocityChart.innerHTML = '<p class="text-gray-500 p-4 text-center">請先選擇房型以生成趨勢圖。</p>';
+        return;
+    }
+    
+    const view = state.currentVelocityView;
+    const dataForView = state.analysisDataCache.salesVelocityAnalysis[view] || {};
+    const timeKeys = Object.keys(dataForView).sort();
+
+    if (timeKeys.length === 0) {
+        dom.salesVelocityChart.innerHTML = '<p class="text-gray-500 p-4 text-center">在此條件下無銷售趨勢資料。</p>';
+        return;
+    }
+    
+    const series = state.selectedVelocityRooms.map(roomType => {
+        return {
+            name: roomType,
+            data: timeKeys.map(timeKey => dataForView[timeKey][roomType]?.count || 0)
+        };
+    });
+
+    const options = {
+        series: series,
+        chart: {
+            type: 'line',
+            height: 350,
+            background: 'transparent',
+            toolbar: { show: true },
+            foreColor: '#e5e7eb',
+            zoom: { enabled: false }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        dataLabels: {
+            enabled: false
+        },
+        markers: {
+            size: 4,
+            hover: {
+                size: 6
+            }
+        },
+        xaxis: {
+            categories: timeKeys,
+            labels: {
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        yaxis: {
+            title: {
+                text: '交易筆數',
+                style: {
+                    color: '#9ca3af'
+                }
+            },
+            labels: {
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            offsetY: -5
+        },
+        tooltip: {
+            theme: 'dark'
+        },
+        grid: {
+            borderColor: '#374151'
+        },
+        noData: {
+            text: '載入中或無資料...',
+            align: 'center',
+            verticalAlign: 'middle',
+            style: {
+                color: '#9ca3af',
+                fontSize: '14px',
+            }
+        }
+    };
+
+    salesVelocityChartInstance = new ApexCharts(dom.salesVelocityChart, options);
+    salesVelocityChartInstance.render();
+}
+
+
 /**
  * @FINAL
  * 動態生成熱力圖的顏色區間 (簡化標籤版)
@@ -103,10 +209,14 @@ export function renderAreaHeatmap() {
 
     const colorRanges = generateColorRanges(maxValue);
 
+    // ▼▼▼ 高度計算邏輯修改 ▼▼▼
+    const dynamicHeight = Math.max(400, yAxisCategories.length * 22);
+    // ▲▲▲ 修改結束 ▲▲▲
+
     const options = {
         series: seriesData,
         chart: {
-            height: 600,
+            height: dynamicHeight, // 使用動態高度
             type: 'heatmap',
             background: 'transparent',
             toolbar: { show: true, tools: { download: true } },
@@ -222,7 +332,7 @@ export function renderAreaHeatmap() {
             }
         },
         title: {
-            text: '房型面積(坪)分佈熱力圖',
+            text: '房型面積分佈熱力圖',
             align: 'center',
             style: { color: '#e5e7eb', fontSize: '16px' }
         },
