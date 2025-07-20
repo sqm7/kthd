@@ -58,6 +58,7 @@ export async function mainAnalyzeData() {
         state.rankingCurrentPage = 1;
         reportRenderer.renderRankingReport();
         reportRenderer.renderPriceBandReport();
+        chartRenderer.renderPriceBandChart(); 
         reportRenderer.renderUnitPriceReport();
         reportRenderer.renderParkingAnalysisReport();
         reportRenderer.renderSalesVelocityReport();
