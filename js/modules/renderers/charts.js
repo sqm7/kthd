@@ -6,10 +6,10 @@ import { renderHeatmapDetailsTable } from './tables.js';
 
 // --- 全局圖表實例 ---
 let salesVelocityChartInstance = null;
-let priceBandChartInstance = null; // <--- 新增一個實例變數
+let priceBandChartInstance = null;
 
 /**
- * 渲染總價帶分佈箱型圖 (新增函式)
+ * 渲染總價帶分佈箱型圖
  */
 export function renderPriceBandChart() {
     if (priceBandChartInstance) {
@@ -24,8 +24,18 @@ export function renderPriceBandChart() {
 
     const { priceBandAnalysis } = state.analysisDataCache;
 
-    // 1. 準備 ApexCharts 需要的資料格式
-    const seriesData = priceBandAnalysis.map(item => ({
+    // ▼▼▼ 修改處 ▼▼▼
+    // 根據 state.selectedPriceBandRooms 的狀態來過濾要顯示在圖表上的資料
+    const filteredAnalysis = priceBandAnalysis.filter(item => state.selectedPriceBandRooms.includes(item.rooms));
+    // ▲▲▲ 修改結束 ▲▲▲
+    
+    if (filteredAnalysis.length === 0) {
+        dom.priceBandChart.innerHTML = '<p class="text-gray-500 p-4 text-center">請選擇房型以生成圖表。</p>';
+        return;
+    }
+
+    // 1. 準備 ApexCharts 需要的資料格式 (使用過濾後的資料)
+    const seriesData = filteredAnalysis.map(item => ({
         x: `${item.rooms}房-${item.bathrooms}衛`,
         y: [
             Math.round(item.minPrice),
@@ -73,8 +83,16 @@ export function renderPriceBandChart() {
                     colors: '#9ca3af'
                 },
                 rotate: -45,
-                offsetY: 5
-            }
+                offsetY: 5,
+                // 確保X軸標籤排序正確
+                sorted: true
+            },
+            // 根據資料動態排序
+            categories: seriesData.map(d => d.x).sort((a, b) => {
+                const [roomsA] = a.split('房').map(Number);
+                const [roomsB] = b.split('房').map(Number);
+                return roomsA - roomsB;
+            })
         },
         yaxis: {
             title: {
@@ -97,7 +115,6 @@ export function renderPriceBandChart() {
             y: {
                 formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
                     const stats = w.globals.series[seriesIndex][dataPointIndex];
-                    // ApexCharts box plot series data is an array [min, q1, median, q3, max]
                     if (Array.isArray(stats) && stats.length === 5) {
                         return `
                             <div>最高: ${stats[4].toLocaleString()} 萬</div>
@@ -123,8 +140,7 @@ export function renderPriceBandChart() {
 
 
 /**
- * 渲染銷售速度趨勢圖 (新增函式)
- * 圖表會根據目前的房型選擇和時間維度動態更新
+ * 渲染銷售速度趨勢圖
  */
 export function renderSalesVelocityChart() {
     if (salesVelocityChartInstance) {
@@ -225,10 +241,7 @@ export function renderSalesVelocityChart() {
 
 
 /**
- * @FINAL
- * 動態生成熱力圖的顏色區間 (簡化標籤版)
- * @param {number} maxValue - 資料中的最大值
- * @returns {Array} - 用於 ApexCharts 的 colorScale.ranges 陣列
+ * 動態生成熱力圖的顏色區間
  */
 function generateColorRanges(maxValue) {
     const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
