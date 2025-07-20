@@ -25,6 +25,7 @@ export const dom = {
   rankingPaginationControls: document.createElement('div'),
   priceBandReportContent: document.getElementById('price-band-report-content'),
   priceBandTable: document.getElementById('price-band-table'),
+  priceBandChart: document.getElementById('price-band-chart'),
   unitPriceReportContent: document.getElementById('unit-price-report-content'),
   residentialStatsTableContainer: document.getElementById('residential-stats-table-container'),
   residentialStatsExtraInfo: document.getElementById('residential-stats-extra-info'),
