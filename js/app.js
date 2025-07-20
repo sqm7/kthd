@@ -149,6 +149,3 @@ function initialize() {
 }
 
 initialize();
-
-// 【錯誤修正】: 移除此處不必要的 export 語句，它導致了模組載入問題，使得事件監聽器失效。
-// export { mainFetchData, removeDistrict } from './modules/eventHandlers.js';
