@@ -159,16 +159,12 @@ export function clearSelectedDistricts() {
     dom.districtSuggestions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 }
 
-// 【新增】使用事件委派處理移除標籤
 export function onDistrictContainerClick(e) {
-    // 處理移除按鈕
     if (e.target.classList.contains('multi-tag-remove')) {
         e.stopPropagation();
         removeDistrict(e.target.dataset.name);
         return;
     }
-    
-    // 處理容器點擊以顯示/隱藏下拉選單
     if (dom.districtContainer.classList.contains('disabled')) return;
     const isHidden = dom.districtSuggestions.classList.toggle('hidden');
     dom.filterCard.classList.toggle('z-elevate-filters', !isHidden);
@@ -265,6 +261,28 @@ export function switchAverageType(type) {
     if (state.analysisDataCache) { reportRenderer.renderUnitPriceReport(); }
 }
 
+// ▼▼▼ 新增函式 ▼▼▼
+export function handlePriceBandRoomFilterClick(e) {
+    const button = e.target.closest('.capsule-btn');
+    if (!button) return;
+    const roomCount = parseInt(button.dataset.roomCount, 10);
+    if (isNaN(roomCount)) return;
+
+    button.classList.toggle('active');
+    
+    if (button.classList.contains('active')) {
+        if (!state.selectedPriceBandRooms.includes(roomCount)) {
+            state.selectedPriceBandRooms.push(roomCount);
+        }
+    } else {
+        state.selectedPriceBandRooms = state.selectedPriceBandRooms.filter(r => r !== roomCount);
+    }
+    
+    // 重新渲染圖表
+    chartRenderer.renderPriceBandChart();
+}
+// ▲▲▲ 新增結束 ▲▲▲
+
 export function handleVelocityRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn'); if (!button) return;
     const roomType = button.dataset.roomType;
@@ -277,7 +295,7 @@ export function handleVelocityRoomFilterClick(e) {
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
     state.selectedVelocityRooms.sort((a, b) => allRoomTypes.indexOf(a) - allRoomTypes.indexOf(b));
     tableRenderer.renderVelocityTable();
-    chartRenderer.renderSalesVelocityChart(); // 新增呼叫
+    chartRenderer.renderSalesVelocityChart();
     chartRenderer.renderAreaHeatmap(); 
 }
 
@@ -288,7 +306,7 @@ export function handleVelocitySubTabClick(e) {
     dom.velocitySubTabsContainer.querySelector('.active').classList.remove('active');
     button.classList.add('active');
     tableRenderer.renderVelocityTable();
-    chartRenderer.renderSalesVelocityChart(); // 新增呼叫
+    chartRenderer.renderSalesVelocityChart();
     chartRenderer.renderAreaHeatmap();
 }
 
