@@ -4,9 +4,16 @@ import { state, getFilters } from './state.js';
 import { dom } from './dom.js';
 import * as api from './api.js';
 import * as ui from './ui.js';
-import * as renderers from './renderers.js';
 import { districtData, countyCodeMap } from './config.js';
 
+// 引入所有渲染模組
+import * as reportRenderer from './renderers/reports.js';
+import * as tableRenderer from './renderers/tables.js';
+import * as chartRenderer from './renderers/charts.js';
+import * as heatmapRenderer from './renderers/heatmap.js';
+import * as componentRenderer from './renderers/uiComponents.js';
+
+// Main data fetching and analysis functions
 export async function mainFetchData() {
     ui.showLoading('查詢中，請稍候...');
     try {
@@ -17,11 +24,11 @@ export async function mainFetchData() {
         state.totalRecords = result.count || 0;
         if (!result.data || result.data.length === 0) {
             ui.showMessage('找不到符合條件的資料。');
-            renderers.renderPagination();
+            componentRenderer.renderPagination();
             return;
         }
-        renderers.renderTable(result.data);
-        renderers.renderPagination();
+        tableRenderer.renderTable(result.data);
+        componentRenderer.renderPagination();
         dom.messageArea.classList.add('hidden');
         dom.tabsContainer.classList.remove('hidden');
         ui.switchTab('data-list');
@@ -29,7 +36,7 @@ export async function mainFetchData() {
         console.error('查詢錯誤:', error);
         ui.showMessage(`查詢錯誤: ${error.message}`, true);
         state.totalRecords = 0;
-        renderers.renderPagination();
+        componentRenderer.renderPagination();
     }
 }
 
@@ -49,12 +56,12 @@ export async function mainAnalyzeData() {
         document.querySelectorAll('.report-header').forEach(el => { el.style.display = 'block'; });
         state.currentSort = { key: 'saleAmountSum', order: 'desc' };
         state.rankingCurrentPage = 1;
-        renderers.renderRankingReport();
-        renderers.renderPriceBandReport();
-        renderers.renderUnitPriceReport();
-        renderers.renderParkingAnalysisReport();
-        renderers.renderSalesVelocityReport();
-        renderers.renderPriceGridAnalysis();
+        reportRenderer.renderRankingReport();
+        reportRenderer.renderPriceBandReport();
+        reportRenderer.renderUnitPriceReport();
+        reportRenderer.renderParkingAnalysisReport();
+        reportRenderer.renderSalesVelocityReport();
+        reportRenderer.renderPriceGridAnalysis();
         ui.switchTab('ranking-report');
     } catch(error) {
         console.error("數據分析失敗:", error);
@@ -71,9 +78,9 @@ export async function mainShowSubTableDetails(btn) {
     try {
         const result = await api.fetchSubData(id, type, county);
         let contentHTML = '<div class="space-y-6">';
-        if (type !== '預售交易' && result.build) contentHTML += renderers.renderSubTable('建物資料', result.build);
-        if (result.land) contentHTML += renderers.renderSubTable('土地資料', result.land);
-        if (result.park) contentHTML += renderers.renderSubTable('車位資料', result.park);
+        if (type !== '預售交易' && result.build) contentHTML += tableRenderer.renderSubTable('建物資料', result.build);
+        if (result.land) contentHTML += tableRenderer.renderSubTable('土地資料', result.land);
+        if (result.park) contentHTML += tableRenderer.renderSubTable('車位資料', result.park);
         contentHTML = (contentHTML === '<div class="space-y-6">') ? '<p>此筆紀錄沒有對應的附表資料。</p>' : contentHTML + '</div>';
         dom.modalContent.innerHTML = contentHTML;
     } catch (error) {
@@ -93,7 +100,7 @@ export async function mainFetchProjectNameSuggestions(query) {
         dom.filterCard.classList.add('z-elevate-filters');
         const processedQuery = query.trim().split(/\s+/).join('%');
         const names = await api.fetchProjectNameSuggestions(countyCode, processedQuery, state.selectedDistricts);
-        renderers.renderSuggestions(names);
+        componentRenderer.renderSuggestions(names);
     } catch (error) {
         console.error("獲取建案建議失敗:", error);
         dom.projectNameSuggestions.innerHTML = `<div class="p-2 text-red-400">讀取建議失敗。</div>`;
@@ -147,17 +154,25 @@ export function updateDistrictOptions() {
 
 export function clearSelectedDistricts() {
     state.selectedDistricts = [];
-    renderers.renderDistrictTags();
+    componentRenderer.renderDistrictTags();
     dom.districtSuggestions.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 }
 
+// 【新增】使用事件委派處理移除標籤
 export function onDistrictContainerClick(e) {
-    if (dom.districtContainer.classList.contains('disabled')) return;
-    if (!e.target.classList.contains('multi-tag-remove')) {
-        const isHidden = dom.districtSuggestions.classList.toggle('hidden');
-        dom.filterCard.classList.toggle('z-elevate-filters', !isHidden);
+    // 處理移除按鈕
+    if (e.target.classList.contains('multi-tag-remove')) {
+        e.stopPropagation();
+        removeDistrict(e.target.dataset.name);
+        return;
     }
+    
+    // 處理容器點擊以顯示/隱藏下拉選單
+    if (dom.districtContainer.classList.contains('disabled')) return;
+    const isHidden = dom.districtSuggestions.classList.toggle('hidden');
+    dom.filterCard.classList.toggle('z-elevate-filters', !isHidden);
 }
+
 
 export function onDistrictSuggestionClick(e) {
     const target = e.target.closest('.suggestion-item'); if (!target) return;
@@ -180,13 +195,13 @@ export function onDistrictSuggestionClick(e) {
         if (selectAllCheckbox) {
            selectAllCheckbox.checked = allDistrictNames.length > 0 && state.selectedDistricts.length === allDistrictNames.length;
         }
-        renderers.renderDistrictTags();
+        componentRenderer.renderDistrictTags();
     }, 0);
 }
 
 export function removeDistrict(name) {
     state.selectedDistricts = state.selectedDistricts.filter(d => d !== name);
-    renderers.renderDistrictTags();
+    componentRenderer.renderDistrictTags();
     const checkbox = dom.districtSuggestions.querySelector(`label[data-name="${name}"] input`);
     if (checkbox) checkbox.checked = false;
     const selectAllCheckbox = document.getElementById('district-select-all');
@@ -216,20 +231,20 @@ export function onSuggestionClick(e) {
         } else {
             state.selectedProjects = state.selectedProjects.filter(p => p !== name);
         }
-        renderers.renderProjectTags();
+        componentRenderer.renderProjectTags();
     }, 0);
 }
 
 export function removeProject(name) {
     state.selectedProjects = state.selectedProjects.filter(p => p !== name);
-    renderers.renderProjectTags();
+    componentRenderer.renderProjectTags();
     const openSuggestionCheckbox = dom.projectNameSuggestions.querySelector(`label[data-name="${name}"] input`);
     if (openSuggestionCheckbox) openSuggestionCheckbox.checked = false;
 }
 
 export function clearSelectedProjects() {
     state.selectedProjects = [];
-    renderers.renderProjectTags();
+    componentRenderer.renderProjectTags();
     const suggestionCheckboxes = dom.projectNameSuggestions.querySelectorAll('input[type="checkbox"]');
     suggestionCheckboxes.forEach(cb => cb.checked = false);
 }
@@ -241,36 +256,12 @@ export function toggleAnalyzeButtonState() {
     dom.analyzeHeatmapBtn.disabled = !(isCountySelected && isValidType);
 }
 
-export function handleTabClick(e) {
-    if (e.target.matches('.tab-button')) {
-        const tabId = e.target.dataset.tab;
-        ui.switchTab(tabId);
-        if (tabId === 'velocity-report' && state.analysisDataCache) {
-            renderers.renderAreaHeatmap();
-        }
-    }
-}
-
-export function handleRankingSort(e) {
-    const header = e.target.closest('.sortable-th'); 
-    if (!header) return; 
-    const sortKey = header.dataset.sortKey; 
-    if (state.currentSort.key === sortKey) { 
-        state.currentSort.order = state.currentSort.order === 'desc' ? 'asc' : 'desc'; 
-    } else { 
-        state.currentSort.key = sortKey; 
-        state.currentSort.order = 'desc'; 
-    } 
-    state.rankingCurrentPage = 1;
-    renderers.renderRankingReport();
-}
-
 export function switchAverageType(type) {
     if (state.currentAverageType === type || !type) return;
     state.currentAverageType = type;
     dom.avgTypeToggle.querySelector('.avg-type-btn.active').classList.remove('active');
     dom.avgTypeToggle.querySelector(`.avg-type-btn[data-type="${type}"]`).classList.add('active');
-    if (state.analysisDataCache) { renderers.renderUnitPriceReport(); }
+    if (state.analysisDataCache) { reportRenderer.renderUnitPriceReport(); }
 }
 
 export function handleVelocityRoomFilterClick(e) {
@@ -284,8 +275,8 @@ export function handleVelocityRoomFilterClick(e) {
     }
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
     state.selectedVelocityRooms.sort((a, b) => allRoomTypes.indexOf(a) - allRoomTypes.indexOf(b));
-    renderers.renderVelocityTable();
-    renderers.renderAreaHeatmap(); 
+    tableRenderer.renderVelocityTable();
+    chartRenderer.renderAreaHeatmap(); 
 }
 
 export function handleVelocitySubTabClick(e) {
@@ -294,8 +285,8 @@ export function handleVelocitySubTabClick(e) {
     state.currentVelocityView = button.dataset.view;
     dom.velocitySubTabsContainer.querySelector('.active').classList.remove('active');
     button.classList.add('active');
-    renderers.renderVelocityTable();
-    renderers.renderAreaHeatmap();
+    tableRenderer.renderVelocityTable();
+    chartRenderer.renderAreaHeatmap();
 }
 
 export function handlePriceGridProjectFilterClick(e) {
@@ -320,7 +311,7 @@ export function handlePriceGridProjectFilterClick(e) {
     dom.heatmapInfoContainer.classList.add('hidden');
     dom.heatmapSummaryTableContainer.classList.add('hidden');
     dom.heatmapHorizontalComparisonTableContainer.classList.add('hidden');
-    renderers.displayCurrentPriceGrid();
+    heatmapRenderer.displayCurrentPriceGrid();
 }
 
 export function syncMainProjectFilter(projectName) {
@@ -329,7 +320,7 @@ export function syncMainProjectFilter(projectName) {
     } else {
         state.selectedProjects = [projectName];
     }
-    renderers.renderProjectTags();
+    componentRenderer.renderProjectTags();
     dom.projectNameSuggestions.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         const itemName = cb.closest('.suggestion-item').dataset.name;
         cb.checked = (itemName === projectName);
@@ -351,7 +342,7 @@ export async function analyzeHeatmap() {
              }
         }
         
-        renderers.renderPriceGapHeatmap(); 
+        heatmapRenderer.renderPriceGapHeatmap(); 
         
         dom.heatmapInfoContainer.classList.remove('hidden');
         btn.innerHTML = `<i class="fas fa-sync-alt mr-2"></i>重新分析`;
@@ -372,7 +363,7 @@ export async function analyzeHeatmap() {
 
 export function handleBackToGrid() {
     state.isHeatmapActive = false;
-    renderers.displayCurrentPriceGrid();
+    heatmapRenderer.displayCurrentPriceGrid();
     dom.backToGridBtn.classList.add('hidden');
     dom.heatmapInfoContainer.classList.add('hidden');
     dom.heatmapSummaryTableContainer.classList.add('hidden');
@@ -441,7 +432,7 @@ export function handleLegendClick(e) {
         legendItem.classList.add('active');
         state.currentLegendFilter = { type: filterType, value: filterValue };
     }
-    renderers.applyHeatmapGridFilter();
+    heatmapRenderer.applyHeatmapGridFilter();
 }
 
 export function handleGlobalClick(e) {
@@ -457,6 +448,6 @@ export function handleGlobalClick(e) {
     if (state.currentLegendFilter.type && !isClickInsideHeatmap) {
         dom.heatmapLegendContainer.querySelectorAll('.legend-item.active').forEach(item => item.classList.remove('active'));
         state.currentLegendFilter = { type: null, value: null };
-        renderers.applyHeatmapGridFilter();
+        heatmapRenderer.applyHeatmapGridFilter();
     }
 }
