@@ -1,4 +1,4 @@
-// js/app.js (已更新為使用拆分後的模組)
+// js/app.js (最終修正版，適配所有拆分後的模組)
 
 import { districtData } from './modules/config.js';
 import * as api from './modules/api.js';
@@ -9,11 +9,7 @@ import { state } from './modules/state.js';
 
 // 引入拆分後的渲染模組
 import * as reportRenderer from './modules/renderers/reports.js';
-import * as tableRenderer from './modules/renderers/tables.js';
 import * as chartRenderer from './modules/renderers/charts.js';
-import * as heatmapRenderer from './modules/renderers/heatmap.js';
-import * as componentRenderer from './modules/renderers/uiComponents.js';
-
 
 function initialize() {
     api.checkAuth().catch(err => {
@@ -31,19 +27,19 @@ function initialize() {
         return;
     }
     
+    // 初始化排名報告的分頁控制器容器
     dom.rankingPaginationControls.id = 'ranking-pagination-controls';
     dom.rankingPaginationControls.className = 'flex justify-between items-center mt-4 text-sm text-gray-400';
     dom.rankingReportContent.querySelector('.overflow-x-auto').insertAdjacentElement('afterend', dom.rankingPaginationControls);
 
+    // --- 主要按鈕與篩選器事件 ---
     dom.searchBtn.addEventListener('click', () => { state.currentPage = 1; handlers.mainFetchData(); });
     dom.analyzeBtn.addEventListener('click', handlers.mainAnalyzeData);
     dom.countySelect.addEventListener('change', handlers.updateDistrictOptions);
-    dom.districtContainer.addEventListener('click', handlers.onDistrictContainerClick);
-    dom.districtSuggestions.addEventListener('click', handlers.onDistrictSuggestionClick);
-    dom.clearDistrictsBtn.addEventListener('click', handlers.clearSelectedDistricts);
     dom.typeSelect.addEventListener('change', handlers.toggleAnalyzeButtonState);
-    dom.dateRangeSelect.addEventListener('change', handlers.handleDateRangeChange);
     
+    // --- 日期相關事件 ---
+    dom.dateRangeSelect.addEventListener('change', handlers.handleDateRangeChange);
     dom.dateStartInput.addEventListener('input', () => { if (document.activeElement === dom.dateStartInput) dom.dateRangeSelect.value = 'custom'; });
     dom.dateEndInput.addEventListener('input', () => { if (document.activeElement === dom.dateEndInput) dom.dateRangeSelect.value = 'custom'; });
     dom.setTodayBtn.addEventListener('click', () => {
@@ -51,12 +47,11 @@ function initialize() {
         dom.dateRangeSelect.value = 'custom';
     });
 
-    dom.modalCloseBtn.addEventListener('click', () => dom.modal.classList.add('hidden'));
-    dom.resultsTable.addEventListener('click', e => { 
-        const detailsBtn = e.target.closest('.details-btn');
-        if (detailsBtn) handlers.mainShowSubTableDetails(detailsBtn); 
-    });
-    
+    // --- 行政區與建案名稱篩選器 (使用事件委派) ---
+    dom.districtContainer.addEventListener('click', handlers.onDistrictContainerClick);
+    dom.districtSuggestions.addEventListener('click', handlers.onDistrictSuggestionClick);
+    dom.clearDistrictsBtn.addEventListener('click', handlers.clearSelectedDistricts);
+
     dom.projectNameInput.addEventListener('focus', handlers.onProjectInputFocus);
     dom.projectNameInput.addEventListener('input', handlers.onProjectInput);
     dom.projectNameSuggestions.addEventListener('click', handlers.onSuggestionClick);
@@ -65,8 +60,15 @@ function initialize() {
     });
     dom.clearProjectsBtn.addEventListener('click', handlers.clearSelectedProjects);
     
+    // --- 彈出視窗與全域點擊事件 ---
+    dom.modalCloseBtn.addEventListener('click', () => dom.modal.classList.add('hidden'));
+    dom.resultsTable.addEventListener('click', e => { 
+        const detailsBtn = e.target.closest('.details-btn');
+        if (detailsBtn) handlers.mainShowSubTableDetails(detailsBtn); 
+    });
     document.addEventListener('click', handlers.handleGlobalClick);
 
+    // --- 報告頁籤與互動元件事件 ---
     dom.tabsContainer.addEventListener('click', (e) => {
         if (e.target.matches('.tab-button')) {
             const tabId = e.target.dataset.tab;
@@ -76,7 +78,6 @@ function initialize() {
             }
         }
     });
-    
     dom.rankingTable.addEventListener('click', (e) => {
         const header = e.target.closest('.sortable-th');
         if (!header) return;
@@ -90,27 +91,22 @@ function initialize() {
         state.rankingCurrentPage = 1;
         reportRenderer.renderRankingReport();
     });
-
     dom.avgTypeToggle.addEventListener('click', (e) => { 
         if (e.target.matches('.avg-type-btn')) handlers.switchAverageType(e.target.dataset.type); 
     });
+    
+    // --- 去化分析與垂直水平分析相關事件 ---
     dom.velocityRoomFilterContainer.addEventListener('click', handlers.handleVelocityRoomFilterClick);
     dom.velocitySubTabsContainer.addEventListener('click', handlers.handleVelocitySubTabClick);
     dom.priceGridProjectFilterContainer.addEventListener('click', handlers.handlePriceGridProjectFilterClick);
-    
     dom.analyzeHeatmapBtn.addEventListener('click', handlers.analyzeHeatmap);
     dom.backToGridBtn.addEventListener('click', handlers.handleBackToGrid);
     dom.heatmapLegendContainer.addEventListener('click', handlers.handleLegendClick);
     
-    // 設定熱力圖控制項的預設值並添加事件監聽
-    dom.heatmapIntervalInput.value = 5;
-    dom.heatmapMinAreaInput.value = 8;
-    dom.heatmapMaxAreaInput.value = 100;
-    
+    // 熱力圖面積級距控制
     dom.heatmapIntervalInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
     dom.heatmapMinAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
     dom.heatmapMaxAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
-
     dom.heatmapIntervalIncrementBtn.addEventListener('click', () => {
         const input = dom.heatmapIntervalInput;
         const step = parseFloat(input.step) || 1;
@@ -130,10 +126,21 @@ function initialize() {
         chartRenderer.renderAreaHeatmap();
     });
 
+    // --- 分享功能 ---
     dom.sharePriceGridBtn.addEventListener('click', () => handlers.handleShareClick('price_grid'));
     dom.shareModalCloseBtn.addEventListener('click', () => dom.shareModal.classList.add('hidden'));
     dom.copyShareUrlBtn.addEventListener('click', handlers.copyShareUrl);
 
+    // 【修正】處理分頁變更的自訂事件
+    document.addEventListener('pageChange', (e) => {
+        if (e.detail.type === 'main') {
+            handlers.mainFetchData();
+        } else if (e.detail.type === 'ranking') {
+            reportRenderer.renderRankingReport();
+        }
+    });
+
+    // --- 初始化應用狀態 ---
     handlers.handleDateRangeChange();
     handlers.toggleAnalyzeButtonState();
     handlers.updateDistrictOptions();
@@ -141,4 +148,5 @@ function initialize() {
 
 initialize();
 
+// 導出需要在其他模組中被呼叫的頂層函式
 export { mainFetchData, removeDistrict } from './modules/eventHandlers.js';
