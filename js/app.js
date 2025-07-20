@@ -1,4 +1,4 @@
-// js/app.js (最終版)
+// js/app.js (已更新為使用拆分後的模組)
 
 import { districtData } from './modules/config.js';
 import * as api from './modules/api.js';
@@ -6,7 +6,14 @@ import { dom } from './modules/dom.js';
 import * as ui from './modules/ui.js';
 import * as handlers from './modules/eventHandlers.js';
 import { state } from './modules/state.js';
-import * as renderers from './modules/renderers.js';
+
+// 引入拆分後的渲染模組
+import * as reportRenderer from './modules/renderers/reports.js';
+import * as tableRenderer from './modules/renderers/tables.js';
+import * as chartRenderer from './modules/renderers/charts.js';
+import * as heatmapRenderer from './modules/renderers/heatmap.js';
+import * as componentRenderer from './modules/renderers/uiComponents.js';
+
 
 function initialize() {
     api.checkAuth().catch(err => {
@@ -60,9 +67,30 @@ function initialize() {
     
     document.addEventListener('click', handlers.handleGlobalClick);
 
-    dom.tabsContainer.addEventListener('click', handlers.handleTabClick);
+    dom.tabsContainer.addEventListener('click', (e) => {
+        if (e.target.matches('.tab-button')) {
+            const tabId = e.target.dataset.tab;
+            ui.switchTab(tabId);
+            if (tabId === 'velocity-report' && state.analysisDataCache) {
+                chartRenderer.renderAreaHeatmap();
+            }
+        }
+    });
     
-    dom.rankingTable.addEventListener('click', handlers.handleRankingSort);
+    dom.rankingTable.addEventListener('click', (e) => {
+        const header = e.target.closest('.sortable-th');
+        if (!header) return;
+        const sortKey = header.dataset.sortKey;
+        if (state.currentSort.key === sortKey) {
+            state.currentSort.order = state.currentSort.order === 'desc' ? 'asc' : 'desc';
+        } else {
+            state.currentSort.key = sortKey;
+            state.currentSort.order = 'desc';
+        }
+        state.rankingCurrentPage = 1;
+        reportRenderer.renderRankingReport();
+    });
+
     dom.avgTypeToggle.addEventListener('click', (e) => { 
         if (e.target.matches('.avg-type-btn')) handlers.switchAverageType(e.target.dataset.type); 
     });
@@ -74,15 +102,14 @@ function initialize() {
     dom.backToGridBtn.addEventListener('click', handlers.handleBackToGrid);
     dom.heatmapLegendContainer.addEventListener('click', handlers.handleLegendClick);
     
-    // 設定熱力圖控制項的預設值
+    // 設定熱力圖控制項的預設值並添加事件監聽
     dom.heatmapIntervalInput.value = 5;
     dom.heatmapMinAreaInput.value = 8;
     dom.heatmapMaxAreaInput.value = 100;
     
-    // 為所有熱力圖控制項添加事件監聽
-    dom.heatmapIntervalInput.addEventListener('change', renderers.renderAreaHeatmap);
-    dom.heatmapMinAreaInput.addEventListener('change', renderers.renderAreaHeatmap);
-    dom.heatmapMaxAreaInput.addEventListener('change', renderers.renderAreaHeatmap);
+    dom.heatmapIntervalInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
+    dom.heatmapMinAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
+    dom.heatmapMaxAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
 
     dom.heatmapIntervalIncrementBtn.addEventListener('click', () => {
         const input = dom.heatmapIntervalInput;
@@ -91,7 +118,7 @@ function initialize() {
         let newValue = (parseFloat(input.value) || 0) + step;
         if (newValue > max) newValue = max;
         input.value = newValue;
-        renderers.renderAreaHeatmap();
+        chartRenderer.renderAreaHeatmap();
     });
     dom.heatmapIntervalDecrementBtn.addEventListener('click', () => {
         const input = dom.heatmapIntervalInput;
@@ -100,7 +127,7 @@ function initialize() {
         let newValue = (parseFloat(input.value) || 0) - step;
         if (newValue < min) newValue = min;
         input.value = newValue;
-        renderers.renderAreaHeatmap();
+        chartRenderer.renderAreaHeatmap();
     });
 
     dom.sharePriceGridBtn.addEventListener('click', () => handlers.handleShareClick('price_grid'));
