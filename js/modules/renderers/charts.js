@@ -6,6 +6,120 @@ import { renderHeatmapDetailsTable } from './tables.js';
 
 // --- 全局圖表實例 ---
 let salesVelocityChartInstance = null;
+let priceBandChartInstance = null; // <--- 新增一個實例變數
+
+/**
+ * 渲染總價帶分佈箱型圖 (新增函式)
+ */
+export function renderPriceBandChart() {
+    if (priceBandChartInstance) {
+        priceBandChartInstance.destroy();
+        priceBandChartInstance = null;
+    }
+
+    if (!state.analysisDataCache || !state.analysisDataCache.priceBandAnalysis || state.analysisDataCache.priceBandAnalysis.length === 0) {
+        dom.priceBandChart.innerHTML = '<p class="text-gray-500 p-4 text-center">無總價帶資料可繪製圖表。</p>';
+        return;
+    }
+
+    const { priceBandAnalysis } = state.analysisDataCache;
+
+    // 1. 準備 ApexCharts 需要的資料格式
+    const seriesData = priceBandAnalysis.map(item => ({
+        x: `${item.rooms}房-${item.bathrooms}衛`,
+        y: [
+            Math.round(item.minPrice),
+            Math.round(item.q1Price),
+            Math.round(item.medianPrice),
+            Math.round(item.q3Price),
+            Math.round(item.maxPrice)
+        ]
+    }));
+    
+    // 2. 設定圖表選項
+    const options = {
+        series: [{
+            name: '總價分佈',
+            type: 'boxPlot',
+            data: seriesData
+        }],
+        chart: {
+            type: 'boxPlot',
+            height: 450,
+            background: 'transparent',
+            toolbar: { show: true },
+            foreColor: '#e5e7eb'
+        },
+        title: {
+            text: '各房型總價帶分佈箱型圖',
+            align: 'center',
+            style: {
+                fontSize: '16px',
+                color: '#e5e7eb'
+            }
+        },
+        plotOptions: {
+            boxPlot: {
+                colors: {
+                    upper: '#06b6d4', // 上漲區間顏色 (Q3 到最大值)
+                    lower: '#8b5cf6'  // 下跌區間顏色 (Q1 到最小值)
+                }
+            }
+        },
+        xaxis: {
+            type: 'category',
+            labels: {
+                style: {
+                    colors: '#9ca3af'
+                },
+                rotate: -45,
+                offsetY: 5
+            }
+        },
+        yaxis: {
+            title: {
+                text: '房屋總價 (萬)',
+                style: {
+                    color: '#9ca3af'
+                }
+            },
+            labels: {
+                formatter: function (val) {
+                    return val.toLocaleString() + " 萬";
+                },
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        tooltip: {
+            theme: 'dark',
+            y: {
+                formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
+                    const stats = w.globals.series[seriesIndex][dataPointIndex];
+                    // ApexCharts box plot series data is an array [min, q1, median, q3, max]
+                    if (Array.isArray(stats) && stats.length === 5) {
+                        return `
+                            <div>最高: ${stats[4].toLocaleString()} 萬</div>
+                            <div>Q3: ${stats[3].toLocaleString()} 萬</div>
+                            <div>中位數: ${stats[2].toLocaleString()} 萬</div>
+                            <div>Q1: ${stats[1].toLocaleString()} 萬</div>
+                            <div>最低: ${stats[0].toLocaleString()} 萬</div>
+                        `;
+                    }
+                    return value;
+                }
+            }
+        },
+        grid: {
+            borderColor: '#374151'
+        }
+    };
+
+    // 3. 渲染圖表
+    priceBandChartInstance = new ApexCharts(dom.priceBandChart, options);
+    priceBandChartInstance.render();
+}
 
 
 /**
