@@ -26,6 +26,9 @@ export const dom = {
   priceBandReportContent: document.getElementById('price-band-report-content'),
   priceBandTable: document.getElementById('price-band-table'),
   priceBandChart: document.getElementById('price-band-chart'),
+  // ▼▼▼ 新增 ▼▼▼
+  priceBandRoomFilterContainer: document.getElementById('price-band-room-filter-container'),
+  // ▲▲▲ 新增結束 ▲▲▲
   unitPriceReportContent: document.getElementById('unit-price-report-content'),
   residentialStatsTableContainer: document.getElementById('residential-stats-table-container'),
   residentialStatsExtraInfo: document.getElementById('residential-stats-extra-info'),
@@ -78,7 +81,5 @@ export const dom = {
   heatmapMinAreaInput: document.getElementById('heatmap-min-area-input'),
   heatmapMaxAreaInput: document.getElementById('heatmap-max-area-input'),
   heatmapDetailsContainer: document.getElementById('heatmap-details-container'),
-  // ▼▼▼ 新增 ▼▼▼
   salesVelocityChart: document.getElementById('sales-velocity-chart'),
-  // ▲▲▲ 新增結束 ▲▲▲
 };
