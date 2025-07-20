@@ -7,6 +7,8 @@ import { renderRankingPagination } from './uiComponents.js';
 import { renderVelocityTable } from './tables.js';
 import { renderAreaHeatmap } from './charts.js';
 import { displayCurrentPriceGrid } from './heatmap.js';
+import { renderAreaHeatmap, renderSalesVelocityChart } from './charts.js'; // 引入新函式
+
 
 
 export function renderRankingReport() {
@@ -136,6 +138,7 @@ export function renderSalesVelocityReport() {
         dom.velocityRoomFilterContainer.innerHTML = '<p class="text-gray-500 text-sm">無可用房型</p>';
     }
     renderVelocityTable();
+    renderSalesVelocityChart(); // 新增呼叫
     renderAreaHeatmap();
 }
 
