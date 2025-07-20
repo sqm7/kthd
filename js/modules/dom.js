@@ -76,7 +76,8 @@ export const dom = {
   heatmapIntervalDecrementBtn: document.getElementById('heatmap-interval-decrement'),
   heatmapMinAreaInput: document.getElementById('heatmap-min-area-input'),
   heatmapMaxAreaInput: document.getElementById('heatmap-max-area-input'),
-  // ▼▼▼ 修改/新增開始 ▼▼▼
   heatmapDetailsContainer: document.getElementById('heatmap-details-container'),
-  // ▲▲▲ 修改/新增結束 ▲▲▲
+  // ▼▼▼ 新增 ▼▼▼
+  salesVelocityChart: document.getElementById('sales-velocity-chart'),
+  // ▲▲▲ 新增結束 ▲▲▲
 };
