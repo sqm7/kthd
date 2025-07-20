@@ -74,11 +74,9 @@ function initialize() {
             const tabId = e.target.dataset.tab;
             ui.switchTab(tabId);
             if (tabId === 'velocity-report' && state.analysisDataCache) {
-                // ▼▼▼ 修改 ▼▼▼
                 // 確保兩個圖表都重新渲染
                 chartRenderer.renderSalesVelocityChart();
                 chartRenderer.renderAreaHeatmap();
-                // ▲▲▲ 修改結束 ▲▲▲
             }
         }
     });
@@ -152,5 +150,5 @@ function initialize() {
 
 initialize();
 
-// 導出需要在其他模組中被呼叫的頂層函式
-export { mainFetchData, removeDistrict } from './modules/eventHandlers.js';
+// 【錯誤修正】: 移除此處不必要的 export 語句，它導致了模組載入問題，使得事件監聽器失效。
+// export { mainFetchData, removeDistrict } from './modules/eventHandlers.js';
