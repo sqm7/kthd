@@ -5,7 +5,7 @@ import { state } from '../state.js';
 import * as ui from '../ui.js';
 import { renderRankingPagination } from './uiComponents.js';
 import { renderVelocityTable } from './tables.js';
-import { renderAreaHeatmap, renderSalesVelocityChart } from './charts.js';
+import { renderAreaHeatmap, renderSalesVelocityChart, renderPriceBandChart } from './charts.js';
 import { displayCurrentPriceGrid } from './heatmap.js';
 
 
@@ -45,15 +45,35 @@ export function renderRankingReport() {
 
 export function renderPriceBandReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.priceBandAnalysis) return;
+    
     const { priceBandAnalysis } = state.analysisDataCache;
+
+    // ▼▼▼ 新增邏輯：產生房型篩選按鈕 ▼▼▼
+    const uniqueRooms = [...new Set(priceBandAnalysis.map(item => item.rooms))].sort((a, b) => a - b);
+    
+    // 預設選取 1-4 房
+    state.selectedPriceBandRooms = uniqueRooms.filter(room => room >= 1 && room <= 4);
+
+    dom.priceBandRoomFilterContainer.innerHTML = uniqueRooms.map(roomCount => {
+        const isActive = state.selectedPriceBandRooms.includes(roomCount);
+        const label = roomCount === 0 ? '店舖/其他' : `${roomCount}房`;
+        return `<button class="capsule-btn ${isActive ? 'active' : ''}" data-room-count="${roomCount}">${label}</button>`;
+    }).join('');
+    // ▲▲▲ 新增結束 ▲▲▲
+
     priceBandAnalysis.sort((a, b) => { if (a.rooms !== b.rooms) return a.rooms - b.rooms; return a.bathrooms - b.bathrooms; });
+    
     const tableHeaders = ['房數', '衛浴數', '筆數', '平均房屋總價', '最低房屋總價', '1/4分位房屋總價', '中位數房屋總價', '3/4分位房屋總價', '最高房屋總價'];
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
     priceBandAnalysis.forEach(item => { bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${item.rooms}</td><td>${item.bathrooms}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.minPrice, 0)}</td><td>${ui.formatNumber(item.q1Price, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td><td>${ui.formatNumber(item.maxPrice, 0)}</td></tr>`; });
     bodyHtml += '</tbody>';
     dom.priceBandTable.innerHTML = headerHtml + bodyHtml;
+
+    // 初始渲染一次圖表
+    renderPriceBandChart();
 }
+
 
 export function renderUnitPriceReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.unitPriceAnalysis) return;
