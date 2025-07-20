@@ -209,14 +209,12 @@ export function renderAreaHeatmap() {
 
     const colorRanges = generateColorRanges(maxValue);
 
-    // ▼▼▼ 高度計算邏輯修改 ▼▼▼
     const dynamicHeight = Math.max(400, yAxisCategories.length * 22);
-    // ▲▲▲ 修改結束 ▲▲▲
 
     const options = {
         series: seriesData,
         chart: {
-            height: dynamicHeight, // 使用動態高度
+            height: dynamicHeight,
             type: 'heatmap',
             background: 'transparent',
             toolbar: { show: true, tools: { download: true } },
