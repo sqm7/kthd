@@ -74,7 +74,11 @@ function initialize() {
             const tabId = e.target.dataset.tab;
             ui.switchTab(tabId);
             if (tabId === 'velocity-report' && state.analysisDataCache) {
+                // ▼▼▼ 修改 ▼▼▼
+                // 確保兩個圖表都重新渲染
+                chartRenderer.renderSalesVelocityChart();
                 chartRenderer.renderAreaHeatmap();
+                // ▲▲▲ 修改結束 ▲▲▲
             }
         }
     });
