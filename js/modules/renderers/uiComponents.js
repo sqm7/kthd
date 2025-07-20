@@ -3,20 +3,22 @@
 import { dom } from '../dom.js';
 import * as ui from '../ui.js';
 import { state } from '../state.js';
+// 移除 'app.js' 的動態導入，解決循環依賴問題
 
 export function renderPagination() {
+    // 讓 onPageChange 回呼直接由 eventHandlers 處理，避免在此處導入 app.js
     ui.createPaginationControls(dom.paginationControls, state.totalRecords, state.currentPage, state.pageSize, (page) => {
         state.currentPage = page;
-        // This dynamic import is a bit tricky, let's call it from app.js instead.
-        import('../app.js').then(app => app.mainFetchData());
+        // The actual call to mainFetchData will be handled by the event handler setup in app.js
+        document.dispatchEvent(new CustomEvent('pageChange', { detail: { type: 'main' } }));
     });
 }
 
 export function renderRankingPagination(totalItems) {
+    // 同上，改為發送自訂事件
     ui.createPaginationControls(dom.rankingPaginationControls, totalItems, state.rankingCurrentPage, state.rankingPageSize, (page) => {
         state.rankingCurrentPage = page;
-        // This dynamic import is a bit tricky, let's call it from app.js instead.
-        import('./reports.js').then(reports => reports.renderRankingReport());
+        document.dispatchEvent(new CustomEvent('pageChange', { detail: { type: 'ranking' } }));
     });
 }
 
@@ -61,13 +63,9 @@ export function renderDistrictTags() {
             const removeBtn = document.createElement('span');
             removeBtn.className = 'multi-tag-remove';
             removeBtn.innerHTML = '&times;';
-            removeBtn.dataset.name = name;
+            removeBtn.dataset.name = name; // 只設定 data-name 供事件委派使用
             tagElement.appendChild(removeBtn);
-            removeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                 // This creates a circular dependency, it's better to handle this in eventHandlers.js
-                import('../app.js').then(app => app.removeDistrict(name));
-            });
+            // 【關鍵修正】移除這裡的 addEventListener，改由 eventHandlers.js 統一處理
             dom.districtContainer.insertBefore(tagElement, dom.districtInputArea);
        });
     } else {
