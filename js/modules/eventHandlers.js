@@ -261,27 +261,27 @@ export function switchAverageType(type) {
     if (state.analysisDataCache) { reportRenderer.renderUnitPriceReport(); }
 }
 
-// ▼▼▼ 新增函式 ▼▼▼
+// ▼▼▼ 【修改處】 ▼▼▼
 export function handlePriceBandRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn');
     if (!button) return;
-    const roomCount = parseInt(button.dataset.roomCount, 10);
-    if (isNaN(roomCount)) return;
+    const roomType = button.dataset.roomType;
+    if (!roomType) return;
 
     button.classList.toggle('active');
     
     if (button.classList.contains('active')) {
-        if (!state.selectedPriceBandRooms.includes(roomCount)) {
-            state.selectedPriceBandRooms.push(roomCount);
+        if (!state.selectedPriceBandRoomTypes.includes(roomType)) {
+            state.selectedPriceBandRoomTypes.push(roomType);
         }
     } else {
-        state.selectedPriceBandRooms = state.selectedPriceBandRooms.filter(r => r !== roomCount);
+        state.selectedPriceBandRoomTypes = state.selectedPriceBandRoomTypes.filter(r => r !== roomType);
     }
     
     // 重新渲染圖表
     chartRenderer.renderPriceBandChart();
 }
-// ▲▲▲ 新增結束 ▲▲▲
+// ▲▲▲ 【修改結束】 ▲▲▲
 
 export function handleVelocityRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn'); if (!button) return;
