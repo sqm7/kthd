@@ -48,10 +48,8 @@ export function renderPriceBandReport() {
     
     const { priceBandAnalysis } = state.analysisDataCache;
 
-    // ▼▼▼ 【修改處】產生新的房型篩選按鈕並更新表格 ▼▼▼
     const allRoomTypes = [...new Set(priceBandAnalysis.map(item => item.roomType))];
     
-    // 自訂排序邏輯
     const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公', '工廠', '倉庫', '其他'];
     allRoomTypes.sort((a, b) => {
         const indexA = sortOrder.indexOf(a);
@@ -62,8 +60,7 @@ export function renderPriceBandReport() {
         return a.localeCompare(b);
     });
 
-    // 預設選取住宅相關房型
-    const defaultSelections = ['套房', '1房', '2房', '3房', '4房'];
+    const defaultSelections = ['套房', '1房', '2房', '3房', '4房', '毛胚'];
     state.selectedPriceBandRoomTypes = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
 
     dom.priceBandRoomFilterContainer.innerHTML = allRoomTypes.map(roomType => {
@@ -80,7 +77,10 @@ export function renderPriceBandReport() {
         return (a.bathrooms || 0) - (b.bathrooms || 0);
     });
     
-    const tableHeaders = ['房型', '衛浴', '筆數', '平均總價(萬)', '最低總價(萬)', 'Q1總價(萬)', '中位數總價(萬)', 'Q3總價(萬)', '最高總價(萬)'];
+    // ▼▼▼ 【修改處】更新表格欄位名稱 ▼▼▼
+    const tableHeaders = ['房型', '衛浴', '筆數', '平均總價(萬)', '最低總價(萬)', '1/4位總價(萬)', '中位數總價(萬)', '3/4位總價(萬)', '最高總價(萬)'];
+    // ▲▲▲ 【修改結束】 ▲▲▲
+
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
     priceBandAnalysis.forEach(item => { 
@@ -88,9 +88,7 @@ export function renderPriceBandReport() {
     });
     bodyHtml += '</tbody>';
     dom.priceBandTable.innerHTML = headerHtml + bodyHtml;
-    // ▲▲▲ 【修改結束】 ▲▲▲
 
-    // 初始渲染一次圖表
     renderPriceBandChart();
 }
 
