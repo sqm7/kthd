@@ -52,7 +52,7 @@ export function renderPriceBandReport() {
     const allRoomTypes = [...new Set(priceBandAnalysis.map(item => item.roomType))];
     
     // 自訂排序邏輯
-    const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '店舖', '辦公', '工廠', '倉庫', '其他'];
+    const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公', '工廠', '倉庫', '其他'];
     allRoomTypes.sort((a, b) => {
         const indexA = sortOrder.indexOf(a);
         const indexB = sortOrder.indexOf(b);
