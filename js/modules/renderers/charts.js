@@ -71,6 +71,13 @@ export function renderPriceBandChart() {
                 }
             }
         },
+        // ▼▼▼ 【修改處】新增 stroke 屬性來定義線條樣式 ▼▼▼
+        stroke: {
+            show: true,
+            width: 1,
+            colors: ['#9ca3af'] // 使用 text-dark 顏色讓線條清晰可見
+        },
+        // ▲▲▲ 【修改結束】 ▲▲▲
         xaxis: {
             type: 'category',
             labels: {
@@ -121,26 +128,20 @@ export function renderPriceBandChart() {
         }
     };
     
-    // ▼▼▼ 【修改處】動態設定 Y 軸範圍 ▼▼▼
     if (seriesData.length > 0) {
-        // 找出所有顯示資料中的最小和最大值
         const allPrices = seriesData.flatMap(d => d.y);
         const overallMin = Math.min(...allPrices);
         const overallMax = Math.max(...allPrices);
 
-        // 計算上下邊界，增加 10% 的緩衝空間 (padding)
         const range = overallMax - overallMin;
-        // 如果所有值的範圍為 0 (例如只有一筆資料或所有資料價格一樣)，則給予一個固定的緩衝
         const padding = range === 0 ? Math.max(overallMin * 0.1, 100) : range * 0.1; 
         
         let paddedMin = overallMin - padding;
         let paddedMax = overallMax + padding;
 
-        // 將 Y 軸的最小值設定為 0 或計算出的最小值，取較大者，避免負數
         options.yaxis.min = Math.max(0, paddedMin);
         options.yaxis.max = paddedMax;
     }
-    // ▲▲▲ 【修改結束】 ▲▲▲
 
     priceBandChartInstance = new ApexCharts(dom.priceBandChart, options);
     priceBandChartInstance.render();
