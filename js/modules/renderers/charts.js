@@ -24,19 +24,14 @@ export function renderPriceBandChart() {
 
     const { priceBandAnalysis } = state.analysisDataCache;
 
-    // ▼▼▼ 【修改處】 ▼▼▼
-    // 根據 state.selectedPriceBandRoomTypes 的狀態來過濾要顯示在圖表上的資料
     const filteredAnalysis = priceBandAnalysis.filter(item => state.selectedPriceBandRoomTypes.includes(item.roomType));
-    // ▲▲▲ 【修改結束】 ▲▲▲
     
     if (filteredAnalysis.length === 0) {
         dom.priceBandChart.innerHTML = '<p class="text-gray-500 p-4 text-center">請選擇房型以生成圖表。</p>';
         return;
     }
 
-    // 1. 準備 ApexCharts 需要的資料格式 (使用過濾後的資料)
     const seriesData = filteredAnalysis.map(item => ({
-        // 修改X軸標籤的產生方式
         x: item.bathrooms !== null ? `${item.roomType}-${item.bathrooms}衛` : item.roomType,
         y: [
             Math.round(item.minPrice),
@@ -47,7 +42,6 @@ export function renderPriceBandChart() {
         ]
     }));
     
-    // 2. 設定圖表選項
     const options = {
         series: [{
             name: '總價分佈',
@@ -72,8 +66,8 @@ export function renderPriceBandChart() {
         plotOptions: {
             boxPlot: {
                 colors: {
-                    upper: '#06b6d4', // 上漲區間顏色 (Q3 到最大值)
-                    lower: '#8b5cf6'  // 下跌區間顏色 (Q1 到最小值)
+                    upper: '#06b6d4',
+                    lower: '#8b5cf6'
                 }
             }
         },
@@ -86,7 +80,6 @@ export function renderPriceBandChart() {
                 rotate: -45,
                 offsetY: 5,
             },
-            // 根據資料動態排序
             categories: seriesData.map(d => d.x).sort()
         },
         yaxis: {
@@ -127,8 +120,28 @@ export function renderPriceBandChart() {
             borderColor: '#374151'
         }
     };
+    
+    // ▼▼▼ 【修改處】動態設定 Y 軸範圍 ▼▼▼
+    if (seriesData.length > 0) {
+        // 找出所有顯示資料中的最小和最大值
+        const allPrices = seriesData.flatMap(d => d.y);
+        const overallMin = Math.min(...allPrices);
+        const overallMax = Math.max(...allPrices);
 
-    // 3. 渲染圖表
+        // 計算上下邊界，增加 10% 的緩衝空間 (padding)
+        const range = overallMax - overallMin;
+        // 如果所有值的範圍為 0 (例如只有一筆資料或所有資料價格一樣)，則給予一個固定的緩衝
+        const padding = range === 0 ? Math.max(overallMin * 0.1, 100) : range * 0.1; 
+        
+        let paddedMin = overallMin - padding;
+        let paddedMax = overallMax + padding;
+
+        // 將 Y 軸的最小值設定為 0 或計算出的最小值，取較大者，避免負數
+        options.yaxis.min = Math.max(0, paddedMin);
+        options.yaxis.max = paddedMax;
+    }
+    // ▲▲▲ 【修改結束】 ▲▲▲
+
     priceBandChartInstance = new ApexCharts(dom.priceBandChart, options);
     priceBandChartInstance.render();
 }
