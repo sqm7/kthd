@@ -24,10 +24,10 @@ export function renderPriceBandChart() {
 
     const { priceBandAnalysis } = state.analysisDataCache;
 
-    // ▼▼▼ 修改處 ▼▼▼
-    // 根據 state.selectedPriceBandRooms 的狀態來過濾要顯示在圖表上的資料
-    const filteredAnalysis = priceBandAnalysis.filter(item => state.selectedPriceBandRooms.includes(item.rooms));
-    // ▲▲▲ 修改結束 ▲▲▲
+    // ▼▼▼ 【修改處】 ▼▼▼
+    // 根據 state.selectedPriceBandRoomTypes 的狀態來過濾要顯示在圖表上的資料
+    const filteredAnalysis = priceBandAnalysis.filter(item => state.selectedPriceBandRoomTypes.includes(item.roomType));
+    // ▲▲▲ 【修改結束】 ▲▲▲
     
     if (filteredAnalysis.length === 0) {
         dom.priceBandChart.innerHTML = '<p class="text-gray-500 p-4 text-center">請選擇房型以生成圖表。</p>';
@@ -36,7 +36,8 @@ export function renderPriceBandChart() {
 
     // 1. 準備 ApexCharts 需要的資料格式 (使用過濾後的資料)
     const seriesData = filteredAnalysis.map(item => ({
-        x: `${item.rooms}房-${item.bathrooms}衛`,
+        // 修改X軸標籤的產生方式
+        x: item.bathrooms !== null ? `${item.roomType}-${item.bathrooms}衛` : item.roomType,
         y: [
             Math.round(item.minPrice),
             Math.round(item.q1Price),
@@ -84,15 +85,9 @@ export function renderPriceBandChart() {
                 },
                 rotate: -45,
                 offsetY: 5,
-                // 確保X軸標籤排序正確
-                sorted: true
             },
             // 根據資料動態排序
-            categories: seriesData.map(d => d.x).sort((a, b) => {
-                const [roomsA] = a.split('房').map(Number);
-                const [roomsB] = b.split('房').map(Number);
-                return roomsA - roomsB;
-            })
+            categories: seriesData.map(d => d.x).sort()
         },
         yaxis: {
             title: {
