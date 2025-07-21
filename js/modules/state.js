@@ -18,9 +18,9 @@ export const state = {
     currentAverageType: 'arithmetic',
     currentVelocityView: 'monthly',
     selectedVelocityRooms: [],
-    // ▼▼▼ 修改處 ▼▼▼
+    // ▼▼▼ 【修改處】 ▼▼▼
     selectedPriceBandRoomTypes: [], // 用於儲存總價帶分析圖表中選擇的房型 (字串)
-    // ▲▲▲ 修改結束 ▲▲▲
+    // ▲▲▲ 【修改結束】 ▲▲▲
     selectedPriceGridProject: null,
     isHeatmapActive: false,
     currentLegendFilter: { type: null, value: null },
