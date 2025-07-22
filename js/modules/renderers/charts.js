@@ -382,28 +382,52 @@ export function renderAreaHeatmap() {
                         return txRoomType === roomType && txArea >= lower && txArea < upper;
                     });
 
+                    // ▼▼▼ 【修改處】更新資料聚合邏輯 ▼▼▼
                     const groupedByProject = matchingTransactions.reduce((acc, tx) => {
                         const projectName = tx['建案名稱'];
                         if (!acc[projectName]) {
-                            acc[projectName] = { prices: [] };
+                            acc[projectName] = { prices: [], unitPrices: [] };
                         }
-                        acc[projectName].prices.push(tx['房屋總價(萬)']);
+                        if (typeof tx['房屋總價(萬)'] === 'number') {
+                            acc[projectName].prices.push(tx['房屋總價(萬)']);
+                        }
+                        if (typeof tx['房屋單價(萬)'] === 'number') {
+                            acc[projectName].unitPrices.push(tx['房屋單價(萬)']);
+                        }
                         return acc;
                     }, {});
 
                     const details = Object.entries(groupedByProject).map(([projectName, data]) => {
                         const prices = data.prices.sort((a, b) => a - b);
-                        const medianPrice = prices.length % 2 === 0
-                            ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
-                            : prices[Math.floor(prices.length / 2)];
+                        const medianPrice = prices.length > 0 ? (
+                            prices.length % 2 === 0
+                                ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
+                                : prices[Math.floor(prices.length / 2)]
+                        ) : 0;
+                        
+                        const unitPrices = data.unitPrices.sort((a, b) => a - b);
+                        const medianUnitPrice = unitPrices.length > 0 ? (
+                            unitPrices.length % 2 === 0
+                                ? (unitPrices[unitPrices.length / 2 - 1] + unitPrices[unitPrices.length / 2]) / 2
+                                : unitPrices[Math.floor(unitPrices.length / 2)]
+                        ) : 0;
 
                         return {
                             projectName: projectName,
                             count: prices.length,
-                            priceRange: { min: prices[0], max: prices[prices.length - 1] },
+                            priceRange: { 
+                                min: prices.length > 0 ? prices[0] : 0, 
+                                max: prices.length > 0 ? prices[prices.length - 1] : 0 
+                            },
                             medianPrice: medianPrice,
+                            unitPriceRange: { 
+                                min: unitPrices.length > 0 ? unitPrices[0] : 0, 
+                                max: unitPrices.length > 0 ? unitPrices[unitPrices.length - 1] : 0 
+                            },
+                            medianUnitPrice: medianUnitPrice,
                         };
                     }).sort((a, b) => b.count - a.count);
+                    // ▲▲▲ 【修改結束】 ▲▲▲
 
                     renderHeatmapDetailsTable({ details, roomType, areaRange });
                 }
