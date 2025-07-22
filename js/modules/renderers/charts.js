@@ -361,7 +361,7 @@ export function renderAreaHeatmap() {
                     const areaRange = config.w.globals.seriesNames[seriesIndex];
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
-                    
+
                     // ▼▼▼ 【關鍵修正】使用與後端 `analysis-engine` 同步的房型分類邏輯 ▼▼▼
                     const getRoomCategory = (record) => {
                         const rooms = record['房數'];
@@ -387,7 +387,8 @@ export function renderAreaHeatmap() {
                         const txArea = tx['房屋面積(坪)'];
                         return txRoomType === roomType && txArea >= lower && txArea < upper;
                     });
-                    
+
+                    // ▼▼▼ 【修改處】更新資料聚合邏輯 ▼▼▼
                     const groupedByProject = matchingTransactions.reduce((acc, tx) => {
                         const projectName = tx['建案名稱'];
                         if (!acc[projectName]) {
@@ -401,9 +402,8 @@ export function renderAreaHeatmap() {
                         const txs = data.transactions;
                         const prices = txs.map(t => t['房屋總價(萬)']).filter(p => typeof p === 'number').sort((a, b) => a - b);
                         const unitPrices = txs.map(t => t['房屋單價(萬)']).filter(p => typeof p === 'number').sort((a, b) => a - b);
-                        const areas = txs.map(t => t['房屋面積(坪)']).filter(a => typeof a === 'number');
-
-                        const safeDivide = (a, b) => b === 0 ? 0 : a / b;
+                        
+                        const safeDivide = (a, b) => b > 0 ? a / b : 0;
 
                         // 中位數
                         const medianPrice = prices.length > 0 ? (prices.length % 2 === 0 ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 : prices[Math.floor(prices.length / 2)]) : 0;
@@ -415,10 +415,8 @@ export function renderAreaHeatmap() {
 
                         // 加權平均
                         const totalHousePrice = txs.reduce((s, t) => s + (t['房屋總價(萬)'] || 0), 0);
-                        const totalArea = areas.reduce((s, a) => s + a, 0);
+                        const totalArea = txs.reduce((s, t) => s + (t['房屋面積(坪)'] || 0), 0);
                         const weightedAvgUnitPrice = safeDivide(totalHousePrice, totalArea);
-                        const avgArea = safeDivide(totalArea, txs.length);
-                        const weightedAvgPrice = weightedAvgUnitPrice * avgArea;
 
                         return {
                             projectName: projectName,
@@ -428,10 +426,12 @@ export function renderAreaHeatmap() {
                             metrics: {
                                 median: { totalPrice: medianPrice, unitPrice: medianUnitPrice },
                                 arithmetic: { totalPrice: arithmeticAvgPrice, unitPrice: arithmeticAvgUnitPrice },
-                                weighted: { totalPrice: weightedAvgPrice, unitPrice: weightedAvgUnitPrice }
+                                // 對於總價，加權平均沒有標準定義，故顯示算術平均；單價則顯示正確的加權平均
+                                weighted: { totalPrice: arithmeticAvgPrice, unitPrice: weightedAvgUnitPrice }
                             }
                         };
                     }).sort((a, b) => b.count - a.count);
+                    // ▲▲▲ 【修改結束】 ▲▲▲
                     
                     state.lastHeatmapDetails = { details, roomType, areaRange };
                     renderHeatmapDetailsTable();
