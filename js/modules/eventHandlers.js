@@ -261,7 +261,6 @@ export function switchAverageType(type) {
     if (state.analysisDataCache) { reportRenderer.renderUnitPriceReport(); }
 }
 
-// ▼▼▼ 【修改處】 ▼▼▼
 export function handlePriceBandRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn');
     if (!button) return;
@@ -278,10 +277,8 @@ export function handlePriceBandRoomFilterClick(e) {
         state.selectedPriceBandRoomTypes = state.selectedPriceBandRoomTypes.filter(r => r !== roomType);
     }
     
-    // 重新渲染圖表
     chartRenderer.renderPriceBandChart();
 }
-// ▲▲▲ 【修改結束】 ▲▲▲
 
 export function handleVelocityRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn'); if (!button) return;
@@ -309,6 +306,24 @@ export function handleVelocitySubTabClick(e) {
     chartRenderer.renderSalesVelocityChart();
     chartRenderer.renderAreaHeatmap();
 }
+
+// ▼▼▼ 【新增處】處理熱力圖詳細數據的統計類型切換 ▼▼▼
+export function handleHeatmapMetricToggle(e) {
+    const button = e.target.closest('.avg-type-btn');
+    if (!button || button.classList.contains('active')) return;
+
+    const metricType = button.dataset.type;
+    state.currentHeatmapDetailMetric = metricType;
+
+    dom.heatmapMetricToggle.querySelector('.active').classList.remove('active');
+    button.classList.add('active');
+
+    // 重新渲染表格
+    if (state.lastHeatmapDetails) {
+        tableRenderer.renderHeatmapDetailsTable();
+    }
+}
+// ▲▲▲ 【新增結束】 ▲▲▲
 
 export function handlePriceGridProjectFilterClick(e) {
     const button = e.target.closest('.capsule-btn');
