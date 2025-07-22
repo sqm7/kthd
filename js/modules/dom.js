@@ -26,9 +26,7 @@ export const dom = {
   priceBandReportContent: document.getElementById('price-band-report-content'),
   priceBandTable: document.getElementById('price-band-table'),
   priceBandChart: document.getElementById('price-band-chart'),
-  // ▼▼▼ 新增 ▼▼▼
   priceBandRoomFilterContainer: document.getElementById('price-band-room-filter-container'),
-  // ▲▲▲ 新增結束 ▲▲▲
   unitPriceReportContent: document.getElementById('unit-price-report-content'),
   residentialStatsTableContainer: document.getElementById('residential-stats-table-container'),
   residentialStatsExtraInfo: document.getElementById('residential-stats-extra-info'),
@@ -82,4 +80,8 @@ export const dom = {
   heatmapMaxAreaInput: document.getElementById('heatmap-max-area-input'),
   heatmapDetailsContainer: document.getElementById('heatmap-details-container'),
   salesVelocityChart: document.getElementById('sales-velocity-chart'),
+  // ▼▼▼ 【新增處】 ▼▼▼
+  heatmapDetailsControls: document.getElementById('heatmap-details-controls'),
+  heatmapMetricToggle: document.getElementById('heatmap-metric-toggle'),
+  // ▲▲▲ 【新增結束】 ▲▲▲
 };
