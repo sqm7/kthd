@@ -71,13 +71,11 @@ export function renderPriceBandChart() {
                 }
             }
         },
-        // ▼▼▼ 【修改處】新增 stroke 屬性來定義線條樣式 ▼▼▼
         stroke: {
             show: true,
             width: 1,
-            colors: ['#9ca3af'] // 使用 text-dark 顏色讓線條清晰可見
+            colors: ['#9ca3af']
         },
-        // ▲▲▲ 【修改結束】 ▲▲▲
         xaxis: {
             type: 'category',
             labels: {
@@ -386,50 +384,51 @@ export function renderAreaHeatmap() {
                     const groupedByProject = matchingTransactions.reduce((acc, tx) => {
                         const projectName = tx['建案名稱'];
                         if (!acc[projectName]) {
-                            acc[projectName] = { prices: [], unitPrices: [] };
+                            acc[projectName] = { transactions: [] };
                         }
-                        if (typeof tx['房屋總價(萬)'] === 'number') {
-                            acc[projectName].prices.push(tx['房屋總價(萬)']);
-                        }
-                        if (typeof tx['房屋單價(萬)'] === 'number') {
-                            acc[projectName].unitPrices.push(tx['房屋單價(萬)']);
-                        }
+                        acc[projectName].transactions.push(tx);
                         return acc;
                     }, {});
 
                     const details = Object.entries(groupedByProject).map(([projectName, data]) => {
-                        const prices = data.prices.sort((a, b) => a - b);
-                        const medianPrice = prices.length > 0 ? (
-                            prices.length % 2 === 0
-                                ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
-                                : prices[Math.floor(prices.length / 2)]
-                        ) : 0;
+                        const txs = data.transactions;
+                        const prices = txs.map(t => t['房屋總價(萬)']).filter(p => typeof p === 'number').sort((a, b) => a - b);
+                        const unitPrices = txs.map(t => t['房屋單價(萬)']).filter(p => typeof p === 'number').sort((a, b) => a - b);
+                        const areas = txs.map(t => t['房屋面積(坪)']).filter(a => typeof a === 'number');
+
+                        const safeDivide = (a, b) => b === 0 ? 0 : a / b;
+
+                        // 中位數
+                        const medianPrice = prices.length > 0 ? (prices.length % 2 === 0 ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 : prices[Math.floor(prices.length / 2)]) : 0;
+                        const medianUnitPrice = unitPrices.length > 0 ? (unitPrices.length % 2 === 0 ? (unitPrices[unitPrices.length / 2 - 1] + unitPrices[unitPrices.length / 2]) / 2 : unitPrices[Math.floor(unitPrices.length / 2)]) : 0;
                         
-                        const unitPrices = data.unitPrices.sort((a, b) => a - b);
-                        const medianUnitPrice = unitPrices.length > 0 ? (
-                            unitPrices.length % 2 === 0
-                                ? (unitPrices[unitPrices.length / 2 - 1] + unitPrices[unitPrices.length / 2]) / 2
-                                : unitPrices[Math.floor(unitPrices.length / 2)]
-                        ) : 0;
+                        // 算術平均
+                        const arithmeticAvgPrice = safeDivide(prices.reduce((s, p) => s + p, 0), prices.length);
+                        const arithmeticAvgUnitPrice = safeDivide(unitPrices.reduce((s, p) => s + p, 0), unitPrices.length);
+
+                        // 加權平均
+                        const totalHousePrice = txs.reduce((s, t) => s + (t['房屋總價(萬)'] || 0), 0);
+                        const totalArea = areas.reduce((s, a) => s + a, 0);
+                        const weightedAvgUnitPrice = safeDivide(totalHousePrice, totalArea);
+                        const avgArea = safeDivide(totalArea, txs.length);
+                        const weightedAvgPrice = weightedAvgUnitPrice * avgArea;
 
                         return {
                             projectName: projectName,
-                            count: prices.length,
-                            priceRange: { 
-                                min: prices.length > 0 ? prices[0] : 0, 
-                                max: prices.length > 0 ? prices[prices.length - 1] : 0 
-                            },
-                            medianPrice: medianPrice,
-                            unitPriceRange: { 
-                                min: unitPrices.length > 0 ? unitPrices[0] : 0, 
-                                max: unitPrices.length > 0 ? unitPrices[unitPrices.length - 1] : 0 
-                            },
-                            medianUnitPrice: medianUnitPrice,
+                            count: txs.length,
+                            priceRange: { min: prices.length > 0 ? prices[0] : 0, max: prices.length > 0 ? prices[prices.length - 1] : 0 },
+                            unitPriceRange: { min: unitPrices.length > 0 ? unitPrices[0] : 0, max: unitPrices.length > 0 ? unitPrices[unitPrices.length - 1] : 0 },
+                            metrics: {
+                                median: { totalPrice: medianPrice, unitPrice: medianUnitPrice },
+                                arithmetic: { totalPrice: arithmeticAvgPrice, unitPrice: arithmeticAvgUnitPrice },
+                                weighted: { totalPrice: weightedAvgPrice, unitPrice: weightedAvgUnitPrice }
+                            }
                         };
                     }).sort((a, b) => b.count - a.count);
                     // ▲▲▲ 【修改結束】 ▲▲▲
-
-                    renderHeatmapDetailsTable({ details, roomType, areaRange });
+                    
+                    state.lastHeatmapDetails = { details, roomType, areaRange };
+                    renderHeatmapDetailsTable();
                 }
             }
         },
