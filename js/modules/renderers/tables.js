@@ -4,18 +4,26 @@ import { dom } from '../dom.js';
 import * as ui from '../ui.js';
 import { state } from '../state.js';
 
-// ▼▼▼ 【修改處】重構 renderHeatmapDetailsTable 函式 ▼▼▼
+// ▼▼▼ 【修改處】重構 renderHeatmapDetailsTable 函式，修正亂碼 Bug 並更新結構 ▼▼▼
 export function renderHeatmapDetailsTable() {
     const { details, roomType, areaRange } = state.lastHeatmapDetails || {};
     const metricType = state.currentHeatmapDetailMetric;
 
+    const contentContainer = dom.heatmapDetailsContent;
+
     if (!details || details.length === 0) {
-        dom.heatmapDetailsContainer.innerHTML = `<p class="text-gray-500 text-center">在 ${roomType || ''} / ${areaRange || ''} 坪的範圍內沒有找到詳細交易資料。</p>`;
+        contentContainer.innerHTML = `<p class="text-gray-500 text-center">在 ${roomType || ''} / ${areaRange || ''} 坪的範圍內沒有找到詳細交易資料。</p>`;
         dom.heatmapDetailsControls.classList.add('hidden');
         return;
     }
     
     dom.heatmapDetailsControls.classList.remove('hidden');
+
+    const metricLabel = {
+        median: '中位數(萬)',
+        weighted: '加權平均(萬)',
+        arithmetic: '算術平均(萬)'
+    }[metricType];
 
     let tableHtml = `
         <h4 class="text-md font-semibold text-cyan-400 mb-2">詳細數據</h4>
@@ -24,15 +32,15 @@ export function renderHeatmapDetailsTable() {
             <table class="min-w-full text-sm">
                 <thead class="bg-gray-800">
                     <tr>
-                        <th class="p-2" rowspan="2">建案名稱 (戶數)</th>
+                        <th class="p-2 align-bottom" rowspan="2">建案名稱 (戶數)</th>
                         <th class="p-2 text-center" colspan="2">總價(萬)</th>
                         <th class="p-2 text-center" colspan="2">房屋單價(萬)</th>
                     </tr>
                     <tr>
-                        <th class="p-2 text-center">區間(萬)</th>
-                        <th class="p-2 text-center">${{median: '中位數(萬)', weighted: '加權平均(萬)', arithmetic: '算術平均(萬)'}[metricType]}</th>
-                        <th class="p-2 text-center">區間(萬)</th>
-                        <th class="p-2 text-center">${{median: '中位數(萬)', weighted: '加權平均(萬)', arithmetic: '算術平均(萬)'}[metricType]}</th>
+                        <th class="p-2 text-center font-normal">區間(萬)</th>
+                        <th class="p-2 text-center font-normal">${metricLabel}</th>
+                        <th class="p-2 text-center font-normal">區間(萬)</th>
+                        <th class="p-2 text-center font-normal">${metricLabel}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,17 +65,7 @@ export function renderHeatmapDetailsTable() {
         </div>
     `;
     
-    const container = dom.heatmapDetailsContainer;
-    // 尋找並替換表格內容，而不是覆蓋整個容器
-    const tableWrapper = container.querySelector('.overflow-y-auto');
-    if (tableWrapper) {
-        tableWrapper.innerHTML = tableHtml.split('<div class="overflow-y-auto" style="max-height: 550px;">')[1].split('</div>')[0];
-    } else {
-        // 如果是第一次渲染，則插入完整結構
-        const placeholder = container.querySelector('p');
-        if(placeholder) placeholder.remove();
-        container.insertAdjacentHTML('beforeend', tableHtml.split('<h4')[1]);
-    }
+    contentContainer.innerHTML = tableHtml;
 }
 // ▲▲▲ 【修改結束】 ▲▲▲
 
