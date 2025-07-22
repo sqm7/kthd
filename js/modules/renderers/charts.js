@@ -1,4 +1,4 @@
-// js/modules/renderers/charts.js
+// 檔案路徑: js/modules/renderers/charts.js
 
 import { dom } from '../dom.js';
 import { state } from '../state.js';
@@ -362,7 +362,7 @@ export function renderAreaHeatmap() {
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                    // ▼▼▼ 【關鍵修正】使用與後端 `analysis-engine` 同步的房型分類邏輯 ▼▼▼
+                    // ▼▼▼ 【關鍵修改】與後端 analysis-engine 同步的房型分類邏輯 ▼▼▼
                     const getRoomCategory = (record) => {
                         const rooms = record['房數'];
                         const buildingType = (record['建物型態'] || '');
@@ -370,17 +370,17 @@ export function renderAreaHeatmap() {
                         const mainPurpose = (record['主要用途'] || '');
 
                         if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
-                        if (buildingType.includes('工廠')) return '工廠';
-                        if (buildingType.includes('倉庫')) return '倉庫';
+                        if (buildingType.includes('廠辦') || buildingType.includes('工廠') || buildingType.includes('倉庫')) return '廠辦';
                         if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) return '辦公';
-                        if (buildingType.includes('住宅大樓') && rooms === 0 && houseArea > 20) return '毛胚';
-                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 20) return '套房';
+                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea > 35) return '毛胚';
+                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 35) return '套房';
                         if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
                         if (rooms === 0) return '套房';
                         if (rooms >= 5) return '5房以上';
-                        return `${rooms}房`;
+                        if (rooms >= 1 && rooms <= 4) return `${rooms}房`;
+                        return '其他';
                     };
-                    // ▲▲▲ 【修正結束】 ▲▲▲
+                    // ▲▲▲ 【修改結束】 ▲▲▲
 
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
