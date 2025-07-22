@@ -18,13 +18,15 @@ export const state = {
     currentAverageType: 'arithmetic',
     currentVelocityView: 'monthly',
     selectedVelocityRooms: [],
-    // ▼▼▼ 【修改處】 ▼▼▼
-    selectedPriceBandRoomTypes: [], // 用於儲存總價帶分析圖表中選擇的房型 (字串)
-    // ▲▲▲ 【修改結束】 ▲▲▲
+    selectedPriceBandRoomTypes: [],
     selectedPriceGridProject: null,
     isHeatmapActive: false,
     currentLegendFilter: { type: null, value: null },
     areaHeatmapChart: null,
+    // ▼▼▼ 【新增處】 ▼▼▼
+    lastHeatmapDetails: null, // 儲存上次點擊熱力圖的詳細數據
+    currentHeatmapDetailMetric: 'median', // 預設顯示中位數
+    // ▲▲▲ 【新增結束】 ▲▲▲
 };
 
 // 根據當前狀態獲取篩選條件
