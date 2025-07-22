@@ -1,4 +1,4 @@
-// js/modules/renderers/reports.js
+// 檔案路徑: js/modules/renderers/reports.js
 
 import { dom } from '../dom.js';
 import { state } from '../state.js';
@@ -50,7 +50,10 @@ export function renderPriceBandReport() {
 
     const allRoomTypes = [...new Set(priceBandAnalysis.map(item => item.roomType))];
     
-    const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公', '工廠', '倉庫', '其他'];
+    // ▼▼▼ 【修改處】更新排序陣列 ▼▼▼
+    const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公', '廠辦', '其他'];
+    // ▲▲▲ 【修改結束】 ▲▲▲
+
     allRoomTypes.sort((a, b) => {
         const indexA = sortOrder.indexOf(a);
         const indexB = sortOrder.indexOf(b);
@@ -77,9 +80,7 @@ export function renderPriceBandReport() {
         return (a.bathrooms || 0) - (b.bathrooms || 0);
     });
     
-    // ▼▼▼ 【修改處】更新表格欄位名稱 ▼▼▼
     const tableHeaders = ['房型', '衛浴', '筆數', '平均總價(萬)', '最低總價(萬)', '1/4位總價(萬)', '中位數總價(萬)', '3/4位總價(萬)', '最高總價(萬)'];
-    // ▲▲▲ 【修改結束】 ▲▲▲
 
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
