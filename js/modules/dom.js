@@ -80,8 +80,9 @@ export const dom = {
   heatmapMaxAreaInput: document.getElementById('heatmap-max-area-input'),
   heatmapDetailsContainer: document.getElementById('heatmap-details-container'),
   salesVelocityChart: document.getElementById('sales-velocity-chart'),
-  // ▼▼▼ 【新增處】 ▼▼▼
   heatmapDetailsControls: document.getElementById('heatmap-details-controls'),
   heatmapMetricToggle: document.getElementById('heatmap-metric-toggle'),
+  // ▼▼▼ 【新增處】 ▼▼▼
+  heatmapDetailsContent: document.getElementById('heatmap-details-content'),
   // ▲▲▲ 【新增結束】 ▲▲▲
 };
