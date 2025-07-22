@@ -1,349 +1,518 @@
 // js/modules/renderers/charts.js
-// 這個模組負責所有圖表的渲染與互動邏輯
 
 import { dom } from '../dom.js';
-import { calculateQuantile, safeDivide } from './reports.js';
-import { CHART_COLORS, DEFAULT_VISIBLE_ROOM_TYPES } from '../config.js';
-import { formatNumber, debounce } from '../utils.js';
+import { state } from '../state.js';
+import { renderHeatmapDetailsTable } from './tables.js';
+
+// --- 全局圖表實例 ---
+let salesVelocityChartInstance = null;
+let priceBandChartInstance = null;
 
 /**
- * 渲染總價帶分析的箱型圖 (Boxplot)
- * @param {object} analysisResult - 後端回傳的分析結果物件
+ * 渲染總價帶分佈箱型圖
  */
-export function renderPriceBandChart(analysisResult) {
-    if (!analysisResult || !analysisResult.priceBandAnalysis || !analysisResult.priceBandAnalysis.datasets) {
-        console.error("無效的總價帶分析資料");
-        dom.priceBandContainer.innerHTML = '<p>總價帶分析資料不足。</p>';
+export function renderPriceBandChart() {
+    if (priceBandChartInstance) {
+        priceBandChartInstance.destroy();
+        priceBandChartInstance = null;
+    }
+
+    if (!state.analysisDataCache || !state.analysisDataCache.priceBandAnalysis || state.analysisDataCache.priceBandAnalysis.length === 0) {
+        dom.priceBandChart.innerHTML = '<p class="text-gray-500 p-4 text-center">無總價帶資料可繪製圖表。</p>';
         return;
     }
 
-    const { labels, datasets } = analysisResult.priceBandAnalysis;
+    const { priceBandAnalysis } = state.analysisDataCache;
 
-    if (!labels || labels.length === 0 || !datasets[0].data.some(d => d !== null)) {
-        dom.priceBandContainer.innerHTML = '<p class="text-center text-gray-500">此篩選條件下無足夠資料可供繪製總價帶圖表。</p>';
-        return;
-    }
+    const filteredAnalysis = priceBandAnalysis.filter(item => state.selectedPriceBandRoomTypes.includes(item.roomType));
     
-    // 清空容器並重新加入 canvas
-    dom.priceBandContainer.innerHTML = '';
-    const canvas = document.createElement('canvas');
-    canvas.id = 'priceBandChart';
-    dom.priceBandContainer.appendChild(canvas);
-    
-    const ctx = canvas.getContext('2d');
-
-    const chartData = {
-        labels: labels,
-        datasets: [{
-            label: '總價分佈 (萬)',
-            data: datasets[0].data,
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-            borderColor: 'rgb(54, 162, 235)',
-            borderWidth: 1,
-            itemRadius: 3,
-            itemStyle: 'circle',
-            hitRadius: 5,
-        }]
-    };
-
-    new Chart(ctx, {
-        type: 'boxplot',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            devicePixelRatio: 2.5,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: '交易總價 (萬元)'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return formatNumber(value);
-                        }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const item = context.raw;
-                            if (!item) return '';
-                            const transactionCount = datasets[0].transactions[context.dataIndex];
-                            return [
-                                `總戶數: ${transactionCount}`,
-                                `最高價: ${formatNumber(item.max)} 萬`,
-                                `Q3 (75%): ${formatNumber(item.q3)} 萬`,
-                                `中位價: ${formatNumber(item.median)} 萬`,
-                                `Q1 (25%): ${formatNumber(item.q1)} 萬`,
-                                `最低價: ${formatNumber(item.min)} 萬`,
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-/**
- * 渲染房型去化分析的堆疊長條圖
- * @param {object} analysisResult - 後端回傳的分析結果物件
- * @param {Array} mainData - 主要的交易資料陣列
- */
-export function renderSalesVelocityChart(analysisResult, mainData) {
-    if (!analysisResult || !analysisResult.salesVelocityAnalysis) {
-        console.error("無效的去化分析資料");
-        dom.salesVelocityContainer.innerHTML = '<p>去化分析資料不足。</p>';
+    if (filteredAnalysis.length === 0) {
+        dom.priceBandChart.innerHTML = '<p class="text-gray-500 p-4 text-center">請選擇房型以生成圖表。</p>';
         return;
     }
 
-    const { weekly, monthly, quarterly, yearly, allRoomTypes } = analysisResult.salesVelocityAnalysis;
+    const seriesData = filteredAnalysis.map(item => ({
+        x: item.bathrooms !== null ? `${item.roomType}-${item.bathrooms}衛` : item.roomType,
+        y: [
+            Math.round(item.minPrice),
+            Math.round(item.q1Price),
+            Math.round(item.medianPrice),
+            Math.round(item.q3Price),
+            Math.round(item.maxPrice)
+        ]
+    }));
     
-    if (!allRoomTypes || allRoomTypes.length === 0) {
-        dom.salesVelocityContainer.innerHTML = '<p class="text-center text-gray-500">此篩選條件下無足夠資料可供繪製去化圖表。</p>';
-        dom.areaHeatmapContainer.innerHTML = '';
-        if (dom.roomTypeFilterContainer) dom.roomTypeFilterContainer.innerHTML = '';
-        return;
-    }
-
-    const viewData = { weekly, monthly, quarterly, yearly };
-    let currentView = 'monthly';
-    let currentChart = null;
-
-    // ▼▼▼ 【修改處】更新前端的房型分類邏輯以和後端同步 ▼▼▼
-    const getRoomCategory = (record) => {
-        const rooms = record['房數'];
-        const buildingType = record['建物型態'] || '';
-        const houseArea = record['房屋面積(坪)'];
-        const mainPurpose = record['主要用途'] || '';
-
-        if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
-        if (buildingType.includes('廠辦')) return '廠辦'; // 新增「廠辦」判斷
-        if (buildingType.includes('工廠')) return '工廠';
-        if (buildingType.includes('倉庫')) return '倉庫';
-        if (mainPurpose.includes('商業') || buildingType.includes('辦公')) return '辦公';
-        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea > 35) return '毛胚';
-        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 35) return '套房';
-        if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
-        if (rooms === 0) return '套房';
-        if (rooms >= 5) return '5房以上';
-        return `${rooms}房`;
-    };
-    // ▲▲▲ 【修改結束】 ▲▲▲
-
-    const createChart = (view) => {
-        const data = viewData[view];
-        if (!data || Object.keys(data).length === 0) {
-            dom.salesVelocityChartContainer.innerHTML = '<p class="text-center text-gray-500">此時間維度無資料。</p>';
-            if(currentChart) currentChart.destroy();
-            return;
-        }
-
-        dom.salesVelocityChartContainer.innerHTML = '<canvas id="salesVelocityChart"></canvas>';
-        const ctx = dom.salesVelocityChart.getContext('2d');
-        const labels = Object.keys(data).sort();
-        
-        const datasets = allRoomTypes.map(roomType => {
-            const colorIndex = allRoomTypes.indexOf(roomType) % CHART_COLORS.length;
-            return {
-                label: roomType,
-                data: labels.map(label => data[label][roomType]?.count || 0),
-                backgroundColor: CHART_COLORS[colorIndex],
-                borderColor: CHART_COLORS[colorIndex],
-                fill: false,
-            };
-        });
-
-        if (currentChart) {
-            currentChart.destroy();
-        }
-        
-        currentChart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels, datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                devicePixelRatio: 2.5,
-                scales: {
-                    x: { stacked: true },
-                    y: { stacked: true, beginAtZero: true, title: { display: true, text: '交易戶數' } }
-                },
-                plugins: {
-                    legend: {
-                        display: false // 將圖例交給外部的篩選器控制
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        callbacks: {
-                            footer: (tooltipItems) => {
-                                let total = 0;
-                                tooltipItems.forEach(item => total += item.raw);
-                                return '期間總計: ' + total + '戶';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    };
-    
-    // 渲染房型篩選器
-    const renderRoomTypeFilters = () => {
-        dom.roomTypeFilterContainer.innerHTML = allRoomTypes.map(type => {
-            const colorIndex = allRoomTypes.indexOf(type) % CHART_COLORS.length;
-            const isChecked = DEFAULT_VISIBLE_ROOM_TYPES.includes(type);
-            return `
-                <label class="inline-flex items-center mr-4 mb-2 cursor-pointer">
-                    <input type="checkbox" class="form-checkbox h-4 w-4 rounded" data-room-type="${type}" ${isChecked ? 'checked' : ''}>
-                    <span class="ml-2 text-sm" style="color: ${CHART_COLORS[colorIndex]};">${type}</span>
-                </label>
-            `;
-        }).join('');
-
-        dom.roomTypeFilterContainer.addEventListener('change', (e) => {
-            if (e.target.type === 'checkbox') {
-                const type = e.target.dataset.roomType;
-                const isChecked = e.target.checked;
-                const datasetIndex = currentChart.data.datasets.findIndex(d => d.label === type);
-                if (datasetIndex !== -1) {
-                    currentChart.setDatasetVisibility(datasetIndex, isChecked);
-                    currentChart.update();
-                }
-            }
-        });
-    };
-
-    // 初始化時根據預設值設定可見性
-    const setInitialVisibility = () => {
-        currentChart.data.datasets.forEach((dataset, index) => {
-            const isVisible = DEFAULT_VISIBLE_ROOM_TYPES.includes(dataset.label);
-            currentChart.setDatasetVisibility(index, isVisible);
-        });
-        currentChart.update();
-    };
-
-    dom.salesVelocityViewSelector.addEventListener('change', (e) => {
-        currentView = e.target.value;
-        createChart(currentView);
-        if(currentChart) setInitialVisibility();
-    });
-
-    createChart(currentView);
-    renderRoomTypeFilters();
-    if(currentChart) setInitialVisibility();
-
-    // 渲染面積分佈熱力圖
-    renderAreaHeatmap(mainData, allRoomTypes, getRoomCategory);
-}
-
-/**
- * 渲染房型面積分佈熱力圖
- * @param {Array} data - 所有交易資料
- * @param {Array} roomTypes - 所有可用的房型
- * @param {Function} getRoomCategory - 用於分類房型的函式
- */
-function renderAreaHeatmap(data, roomTypes, getRoomCategory) {
-    if (!data || data.length === 0) {
-        dom.areaHeatmapContainer.innerHTML = '';
-        return;
-    }
-
-    const areaData = {};
-    roomTypes.forEach(type => areaData[type] = []);
-
-    data.forEach(record => {
-        const category = getRoomCategory(record);
-        const area = record['房屋面積(坪)'];
-        if (areaData[category] && typeof area === 'number' && area > 0) {
-            areaData[category].push(area);
-        }
-    });
-
-    const maxArea = Math.max(...Object.values(areaData).flat());
-    const binSize = 10;
-    const bins = Math.ceil(maxArea / binSize);
-    const labels = Array.from({ length: bins }, (_, i) => `${i * binSize}-${(i + 1) * binSize}坪`);
-
-    const heatmapData = roomTypes.map(type => {
-        const counts = Array(bins).fill(0);
-        areaData[type].forEach(area => {
-            const binIndex = Math.floor(area / binSize);
-            if (binIndex < bins) {
-                counts[binIndex]++;
-            }
-        });
-        return counts;
-    });
-
-    dom.areaHeatmapContainer.innerHTML = '<canvas id="areaHeatmapChart"></canvas>';
-    const ctx = document.getElementById('areaHeatmapChart').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'heatmap',
-        data: {
-            labels: labels,
-            datasets: roomTypes.map((type, i) => ({
-                label: type,
-                data: heatmapData[i].map((count, j) => ({ x: labels[j], y: type, v: count })),
-                backgroundColor: (context) => {
-                    if (!context.raw) return 'rgba(230, 230, 230, 0.2)';
-                    const alpha = Math.min(1, 0.1 + context.raw.v / 10);
-                    const colorIndex = roomTypes.indexOf(type) % CHART_COLORS.length;
-                    const hexColor = CHART_COLORS[colorIndex];
-                    // Convert hex to rgba
-                    const r = parseInt(hexColor.slice(1, 3), 16);
-                    const g = parseInt(hexColor.slice(3, 5), 16);
-                    const b = parseInt(hexColor.slice(5, 7), 16);
-                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                },
-                borderColor: 'white',
-                borderWidth: 1,
-                width: ({ chart }) => (chart.chartArea || {}).width / labels.length - 1,
-                height: ({ chart }) => (chart.chartArea || {}).height / roomTypes.length - 1,
-            }))
+    const options = {
+        series: [{
+            name: '總價分佈',
+            type: 'boxPlot',
+            data: seriesData
+        }],
+        chart: {
+            type: 'boxPlot',
+            height: 450,
+            background: 'transparent',
+            toolbar: { show: true },
+            foreColor: '#e5e7eb'
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            devicePixelRatio: 2.5,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        title: () => '',
-                        label: (context) => {
-                            const { x, y, v } = context.raw;
-                            return `${y} | ${x}: ${v}戶`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    type: 'category',
-                    labels: roomTypes,
-                    offset: true,
-                },
-                x: {
-                    type: 'category',
-                    labels: labels,
-                    offset: true,
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 45,
-                    }
+        title: {
+            text: '各房型總價帶分佈箱型圖',
+            align: 'center',
+            style: {
+                fontSize: '16px',
+                color: '#e5e7eb'
+            }
+        },
+        plotOptions: {
+            boxPlot: {
+                colors: {
+                    upper: '#06b6d4',
+                    lower: '#8b5cf6'
                 }
             }
+        },
+        stroke: {
+            show: true,
+            width: 1,
+            colors: ['#9ca3af']
+        },
+        xaxis: {
+            type: 'category',
+            labels: {
+                style: {
+                    colors: '#9ca3af'
+                },
+                rotate: -45,
+                offsetY: 5,
+            },
+            categories: seriesData.map(d => d.x).sort()
+        },
+        yaxis: {
+            title: {
+                text: '房屋總價 (萬)',
+                style: {
+                    color: '#9ca3af'
+                }
+            },
+            labels: {
+                formatter: function (val) {
+                    return val.toLocaleString() + " 萬";
+                },
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        tooltip: {
+            theme: 'dark',
+            y: {
+                formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
+                    const stats = w.globals.series[seriesIndex][dataPointIndex];
+                    if (Array.isArray(stats) && stats.length === 5) {
+                        return `
+                            <div>最高: ${stats[4].toLocaleString()} 萬</div>
+                            <div>Q3: ${stats[3].toLocaleString()} 萬</div>
+                            <div>中位數: ${stats[2].toLocaleString()} 萬</div>
+                            <div>Q1: ${stats[1].toLocaleString()} 萬</div>
+                            <div>最低: ${stats[0].toLocaleString()} 萬</div>
+                        `;
+                    }
+                    return value;
+                }
+            }
+        },
+        grid: {
+            borderColor: '#374151'
+        }
+    };
+    
+    if (seriesData.length > 0) {
+        const allPrices = seriesData.flatMap(d => d.y);
+        const overallMin = Math.min(...allPrices);
+        const overallMax = Math.max(...allPrices);
+
+        const range = overallMax - overallMin;
+        const padding = range === 0 ? Math.max(overallMin * 0.1, 100) : range * 0.1; 
+        
+        let paddedMin = overallMin - padding;
+        let paddedMax = overallMax + padding;
+
+        options.yaxis.min = Math.max(0, paddedMin);
+        options.yaxis.max = paddedMax;
+    }
+
+    priceBandChartInstance = new ApexCharts(dom.priceBandChart, options);
+    priceBandChartInstance.render();
+}
+
+
+/**
+ * 渲染銷售速度趨勢圖
+ */
+export function renderSalesVelocityChart() {
+    if (salesVelocityChartInstance) {
+        salesVelocityChartInstance.destroy();
+        salesVelocityChartInstance = null;
+    }
+    
+    if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis || state.selectedVelocityRooms.length === 0) {
+        dom.salesVelocityChart.innerHTML = '<p class="text-gray-500 p-4 text-center">請先選擇房型以生成趨勢圖。</p>';
+        return;
+    }
+    
+    const view = state.currentVelocityView;
+    const dataForView = state.analysisDataCache.salesVelocityAnalysis[view] || {};
+    const timeKeys = Object.keys(dataForView).sort();
+
+    if (timeKeys.length === 0) {
+        dom.salesVelocityChart.innerHTML = '<p class="text-gray-500 p-4 text-center">在此條件下無銷售趨勢資料。</p>';
+        return;
+    }
+    
+    const series = state.selectedVelocityRooms.map(roomType => {
+        return {
+            name: roomType,
+            data: timeKeys.map(timeKey => dataForView[timeKey][roomType]?.count || 0)
+        };
+    });
+
+    const options = {
+        series: series,
+        chart: {
+            type: 'line',
+            height: 350,
+            background: 'transparent',
+            toolbar: { show: true },
+            foreColor: '#e5e7eb',
+            zoom: { enabled: false }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        dataLabels: {
+            enabled: false
+        },
+        markers: {
+            size: 4,
+            hover: {
+                size: 6
+            }
+        },
+        xaxis: {
+            categories: timeKeys,
+            labels: {
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        yaxis: {
+            title: {
+                text: '交易筆數',
+                style: {
+                    color: '#9ca3af'
+                }
+            },
+            labels: {
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            offsetY: -5
+        },
+        tooltip: {
+            theme: 'dark'
+        },
+        grid: {
+            borderColor: '#374151'
+        },
+        noData: {
+            text: '載入中或無資料...',
+            align: 'center',
+            verticalAlign: 'middle',
+            style: {
+                color: '#9ca3af',
+                fontSize: '14px',
+            }
+        }
+    };
+
+    salesVelocityChartInstance = new ApexCharts(dom.salesVelocityChart, options);
+    salesVelocityChartInstance.render();
+}
+
+
+/**
+ * 動態生成熱力圖的顏色區間
+ */
+function generateColorRanges(maxValue) {
+    const palette = ['#fef9c3', '#fef08a', '#fde047', '#facc15', '#fbbf24', '#f97316', '#ea580c', '#dc2626', '#b91c1c'];
+    const ranges = [{
+        from: 0, to: 0, color: '#252836', name: '0 戶'
+    }];
+
+    if (maxValue <= 0) return ranges;
+
+    const steps = [3, 5, 10, 20, 35, 50, 100, 200];
+    let lastStep = 0;
+
+    for (let i = 0; i < steps.length; i++) {
+        const from = lastStep + 1;
+        const to = steps[i];
+        if (from > maxValue) break;
+
+        const effectiveTo = Math.min(to, maxValue);
+        const labelName = from === effectiveTo ? `${from} 戶` : `戶數: ${from}-${effectiveTo}`;
+
+        ranges.push({
+            from: from,
+            to: effectiveTo + 0.9,
+            color: palette[i],
+            name: labelName
+        });
+        lastStep = effectiveTo;
+    }
+
+    if (maxValue > lastStep) {
+        ranges.push({
+            from: lastStep + 1,
+            to: maxValue,
+            color: palette[palette.length - 1],
+            name: `> ${lastStep} 戶`
+        });
+    }
+
+    return ranges;
+}
+
+
+export function renderAreaHeatmap() {
+    if (state.areaHeatmapChart) {
+        state.areaHeatmapChart.destroy();
+        state.areaHeatmapChart = null;
+    }
+    if (!state.analysisDataCache || !state.analysisDataCache.areaDistributionAnalysis) {
+        dom.areaHeatmapChart.innerHTML = '<p class="text-gray-500 p-4 text-center">無面積分佈資料可供分析。</p>';
+        return;
+    }
+
+    const distributionData = state.analysisDataCache.areaDistributionAnalysis;
+    const interval = parseFloat(dom.heatmapIntervalInput.value);
+    const userMinArea = parseFloat(dom.heatmapMinAreaInput.value);
+    const userMaxArea = parseFloat(dom.heatmapMaxAreaInput.value);
+
+    let allAreas = [];
+    state.selectedVelocityRooms.forEach(roomType => {
+        if (distributionData[roomType]) {
+            const filteredAreas = distributionData[roomType].filter(area => area >= userMinArea && area <= userMaxArea);
+            allAreas.push(...filteredAreas);
         }
     });
+
+    if (allAreas.length === 0 || isNaN(interval) || interval <= 0 || isNaN(userMinArea) || isNaN(userMaxArea) || userMinArea >= userMaxArea) {
+        dom.areaHeatmapChart.innerHTML = '<p class="text-gray-500 p-4 text-center">在此面積範圍內無資料，或範圍/級距設定無效。</p>';
+        return;
+    }
+
+    const yAxisCategories = [];
+    for (let i = userMinArea; i < userMaxArea; i += interval) {
+        yAxisCategories.push(`${i.toFixed(1)}-${(i + interval).toFixed(1)}`);
+    }
+
+    let maxValue = 0;
+    const seriesData = yAxisCategories.map(category => {
+        const [lower, upper] = category.split('-').map(parseFloat);
+        const dataPoints = state.selectedVelocityRooms.map(roomType => {
+            const roomData = distributionData[roomType] || [];
+            const count = roomData.filter(area => area >= lower && area < upper && area >= userMinArea && area <= userMaxArea).length;
+            if (count > maxValue) {
+                maxValue = count;
+            }
+            return count;
+        });
+        return {
+            name: category,
+            data: dataPoints
+        };
+    });
+
+    const colorRanges = generateColorRanges(maxValue);
+
+    const dynamicHeight = Math.max(400, yAxisCategories.length * 22);
+
+    const options = {
+        series: seriesData,
+        chart: {
+            height: dynamicHeight,
+            type: 'heatmap',
+            background: 'transparent',
+            toolbar: { show: true, tools: { download: true } },
+            foreColor: '#e5e7eb',
+            events: {
+                dataPointSelection: (event, chartContext, config) => {
+                    const { seriesIndex, dataPointIndex } = config;
+                    if (seriesIndex < 0 || dataPointIndex < 0) return;
+
+                    const areaRange = config.w.globals.seriesNames[seriesIndex];
+                    const roomType = state.selectedVelocityRooms[dataPointIndex];
+                    const [lower, upper] = areaRange.split('-').map(parseFloat);
+
+                    // ▼▼▼ 【關鍵修正】使用與後端 `analysis-engine` 同步的房型分類邏輯 ▼▼▼
+                    const getRoomCategory = (record) => {
+                        const rooms = record['房數'];
+                        const buildingType = (record['建物型態'] || '');
+                        const houseArea = record['房屋面積(坪)'];
+                        const mainPurpose = (record['主要用途'] || '');
+
+                        if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
+                        if (buildingType.includes('工廠')) return '工廠';
+                        if (buildingType.includes('倉庫')) return '倉庫';
+                        if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) return '辦公';
+                        if (buildingType.includes('住宅大樓') && rooms === 0 && houseArea > 20) return '毛胚';
+                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 20) return '套房';
+                        if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
+                        if (rooms === 0) return '套房';
+                        if (rooms >= 5) return '5房以上';
+                        return `${rooms}房`;
+                    };
+                    // ▲▲▲ 【修正結束】 ▲▲▲
+
+                    const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
+                        const txRoomType = getRoomCategory(tx);
+                        const txArea = tx['房屋面積(坪)'];
+                        return txRoomType === roomType && txArea >= lower && txArea < upper;
+                    });
+
+                    // ▼▼▼ 【修改處】更新資料聚合邏輯 ▼▼▼
+                    const groupedByProject = matchingTransactions.reduce((acc, tx) => {
+                        const projectName = tx['建案名稱'];
+                        if (!acc[projectName]) {
+                            acc[projectName] = { transactions: [] };
+                        }
+                        acc[projectName].transactions.push(tx);
+                        return acc;
+                    }, {});
+
+                    const details = Object.entries(groupedByProject).map(([projectName, data]) => {
+                        const txs = data.transactions;
+                        const prices = txs.map(t => t['房屋總價(萬)']).filter(p => typeof p === 'number').sort((a, b) => a - b);
+                        const unitPrices = txs.map(t => t['房屋單價(萬)']).filter(p => typeof p === 'number').sort((a, b) => a - b);
+                        
+                        const safeDivide = (a, b) => b > 0 ? a / b : 0;
+
+                        // 中位數
+                        const medianPrice = prices.length > 0 ? (prices.length % 2 === 0 ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 : prices[Math.floor(prices.length / 2)]) : 0;
+                        const medianUnitPrice = unitPrices.length > 0 ? (unitPrices.length % 2 === 0 ? (unitPrices[unitPrices.length / 2 - 1] + unitPrices[unitPrices.length / 2]) / 2 : unitPrices[Math.floor(unitPrices.length / 2)]) : 0;
+                        
+                        // 算術平均
+                        const arithmeticAvgPrice = safeDivide(prices.reduce((s, p) => s + p, 0), prices.length);
+                        const arithmeticAvgUnitPrice = safeDivide(unitPrices.reduce((s, p) => s + p, 0), unitPrices.length);
+
+                        // 加權平均
+                        const totalHousePrice = txs.reduce((s, t) => s + (t['房屋總價(萬)'] || 0), 0);
+                        const totalArea = txs.reduce((s, t) => s + (t['房屋面積(坪)'] || 0), 0);
+                        const weightedAvgUnitPrice = safeDivide(totalHousePrice, totalArea);
+
+                        return {
+                            projectName: projectName,
+                            count: txs.length,
+                            priceRange: { min: prices.length > 0 ? prices[0] : 0, max: prices.length > 0 ? prices[prices.length - 1] : 0 },
+                            unitPriceRange: { min: unitPrices.length > 0 ? unitPrices[0] : 0, max: unitPrices.length > 0 ? unitPrices[unitPrices.length - 1] : 0 },
+                            metrics: {
+                                median: { totalPrice: medianPrice, unitPrice: medianUnitPrice },
+                                arithmetic: { totalPrice: arithmeticAvgPrice, unitPrice: arithmeticAvgUnitPrice },
+                                // 對於總價，加權平均沒有標準定義，故顯示算術平均；單價則顯示正確的加權平均
+                                weighted: { totalPrice: arithmeticAvgPrice, unitPrice: weightedAvgUnitPrice }
+                            }
+                        };
+                    }).sort((a, b) => b.count - a.count);
+                    // ▲▲▲ 【修改結束】 ▲▲▲
+                    
+                    state.lastHeatmapDetails = { details, roomType, areaRange };
+                    renderHeatmapDetailsTable();
+                }
+            }
+        },
+        plotOptions: {
+            heatmap: {
+                radius: 0,
+                useFillColorAsStroke: true,
+                enableShades: false,
+                colorScale: {
+                    ranges: colorRanges
+                }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            dropShadow: {
+                enabled: true,
+                top: 1,
+                left: 1,
+                blur: 1,
+                color: '#000',
+                opacity: 0.6
+            },
+            style: {
+                colors: [function({ value }) {
+                    if (value === 0) {
+                        return 'transparent';
+                    }
+                    return '#e5e7eb';
+                }]
+            },
+            formatter: function(val) {
+                if (val === 0) {
+                    return '';
+                }
+                return val;
+            }
+        },
+        xaxis: {
+            type: 'category',
+            categories: state.selectedVelocityRooms,
+            labels: {
+                rotate: 0,
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    fontSize: '12px',
+                },
+                formatter: (value) => {
+                    if (typeof value === 'string' && value.includes('-')) {
+                        const parts = value.split('-');
+                        return `${parseFloat(parts[0]).toFixed(1)}-${parseFloat(parts[1]).toFixed(1)}`;
+                    }
+                    return value;
+                }
+            }
+        },
+        title: {
+            text: '房型面積分佈熱力圖',
+            align: 'center',
+            style: { color: '#e5e7eb', fontSize: '16px' }
+        },
+        tooltip: {
+            theme: 'dark',
+            y: {
+                formatter: (val) => {
+                    if (val === 0) return '無成交紀錄';
+                    return `${val} 戶`;
+                }
+            }
+        },
+        grid: {
+            borderColor: '#374151'
+        },
+    };
+
+    state.areaHeatmapChart = new ApexCharts(dom.areaHeatmapChart, options);
+    state.areaHeatmapChart.render();
 }
