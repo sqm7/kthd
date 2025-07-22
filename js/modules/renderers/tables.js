@@ -10,6 +10,7 @@ export function renderHeatmapDetailsTable({ details, roomType, areaRange }) {
         return;
     }
 
+    // ▼▼▼ 【修改處】更新表格 HTML 結構 ▼▼▼
     let tableHtml = `
         <h4 class="text-md font-semibold text-cyan-400 mb-2">詳細數據</h4>
         <p class="text-sm text-gray-400 mb-4">房型: <span class="font-bold">${roomType}</span> | 面積區間: <span class="font-bold">${areaRange} 坪</span></p>
@@ -20,6 +21,8 @@ export function renderHeatmapDetailsTable({ details, roomType, areaRange }) {
                         <th class="p-2">建案名稱</th>
                         <th class="p-2 text-center">總價區間 (萬)</th>
                         <th class="p-2 text-center">總價中位數 (萬)</th>
+                        <th class="p-2 text-center">單價區間 (萬)</th>
+                        <th class="p-2 text-center">房屋單價中位數 (萬)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,6 +34,8 @@ export function renderHeatmapDetailsTable({ details, roomType, areaRange }) {
                 <td class="p-2">${item.projectName} (${item.count}戶)</td>
                 <td class="p-2 text-center">${ui.formatNumber(item.priceRange.min, 0)} - ${ui.formatNumber(item.priceRange.max, 0)}</td>
                 <td class="p-2 text-center font-bold">${ui.formatNumber(item.medianPrice, 0)}</td>
+                <td class="p-2 text-center">${ui.formatNumber(item.unitPriceRange.min, 2)} - ${ui.formatNumber(item.unitPriceRange.max, 2)}</td>
+                <td class="p-2 text-center font-bold">${ui.formatNumber(item.medianUnitPrice, 2)}</td>
             </tr>
         `;
     });
@@ -40,6 +45,7 @@ export function renderHeatmapDetailsTable({ details, roomType, areaRange }) {
             </table>
         </div>
     `;
+    // ▲▲▲ 【修改結束】 ▲▲▲
 
     dom.heatmapDetailsContainer.innerHTML = tableHtml;
 }
