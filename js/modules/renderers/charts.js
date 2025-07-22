@@ -361,26 +361,33 @@ export function renderAreaHeatmap() {
                     const areaRange = config.w.globals.seriesNames[seriesIndex];
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
-
+                    
+                    // ▼▼▼ 【關鍵修正】使用與後端 `analysis-engine` 同步的房型分類邏輯 ▼▼▼
                     const getRoomCategory = (record) => {
                         const rooms = record['房數'];
                         const buildingType = (record['建物型態'] || '');
+                        const houseArea = record['房屋面積(坪)'];
+                        const mainPurpose = (record['主要用途'] || '');
+
+                        if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
+                        if (buildingType.includes('工廠')) return '工廠';
+                        if (buildingType.includes('倉庫')) return '倉庫';
+                        if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) return '辦公';
+                        if (buildingType.includes('住宅大樓') && rooms === 0 && houseArea > 20) return '毛胚';
+                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 20) return '套房';
                         if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
-                        if (rooms === 0) {
-                            if (buildingType.includes('辦公') || buildingType.includes('商業') || buildingType.includes('事務所') || buildingType.includes('店舖') || buildingType.includes('店面') || buildingType.includes('工廠') || buildingType.includes('倉庫')) return '其他';
-                            return '套房';
-                        }
+                        if (rooms === 0) return '套房';
                         if (rooms >= 5) return '5房以上';
                         return `${rooms}房`;
                     };
+                    // ▲▲▲ 【修正結束】 ▲▲▲
 
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
                         const txArea = tx['房屋面積(坪)'];
                         return txRoomType === roomType && txArea >= lower && txArea < upper;
                     });
-
-                    // ▼▼▼ 【修改處】更新資料聚合邏輯 ▼▼▼
+                    
                     const groupedByProject = matchingTransactions.reduce((acc, tx) => {
                         const projectName = tx['建案名稱'];
                         if (!acc[projectName]) {
@@ -425,7 +432,6 @@ export function renderAreaHeatmap() {
                             }
                         };
                     }).sort((a, b) => b.count - a.count);
-                    // ▲▲▲ 【修改結束】 ▲▲▲
                     
                     state.lastHeatmapDetails = { details, roomType, areaRange };
                     renderHeatmapDetailsTable();
