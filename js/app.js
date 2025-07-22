@@ -21,9 +21,10 @@ import {
     clearSelectedProjects,
     handleGlobalClick,
     switchAverageType,
-    handlePriceBandRoomFilterClick, // 引入新的事件處理函式
+    handlePriceBandRoomFilterClick,
     handleVelocityRoomFilterClick,
     handleVelocitySubTabClick,
+    handleHeatmapMetricToggle, // 引入新的事件處理函式
     handlePriceGridProjectFilterClick,
     analyzeHeatmap,
     handleBackToGrid,
@@ -122,11 +123,7 @@ function initialize() {
     });
     
     // --- 去化分析與垂直水平分析相關事件 ---
-    
-    // ▼▼▼ 新增事件監聽器 ▼▼▼
     dom.priceBandRoomFilterContainer.addEventListener('click', handlePriceBandRoomFilterClick);
-    // ▲▲▲ 新增結束 ▲▲▲
-    
     dom.velocityRoomFilterContainer.addEventListener('click', handleVelocityRoomFilterClick);
     dom.velocitySubTabsContainer.addEventListener('click', handleVelocitySubTabClick);
     dom.priceGridProjectFilterContainer.addEventListener('click', handlePriceGridProjectFilterClick);
@@ -134,6 +131,10 @@ function initialize() {
     dom.backToGridBtn.addEventListener('click', handleBackToGrid);
     dom.heatmapLegendContainer.addEventListener('click', handleLegendClick);
     
+    // ▼▼▼ 【新增處】綁定新的事件監聽器 ▼▼▼
+    dom.heatmapMetricToggle.addEventListener('click', handleHeatmapMetricToggle);
+    // ▲▲▲ 【新增結束】 ▲▲▲
+
     // 熱力圖面積級距控制
     dom.heatmapIntervalInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
     dom.heatmapMinAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
