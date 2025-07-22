@@ -4,11 +4,10 @@ import { dom } from '../dom.js';
 import * as ui from '../ui.js';
 import { state } from '../state.js';
 
-// ▼▼▼ 【修改處】重構 renderHeatmapDetailsTable 函式，修正亂碼 Bug 並更新結構 ▼▼▼
+// ▼▼▼ 【修改處】重構 renderHeatmapDetailsTable 函式，修正亂碼 Bug 並更新結構與標頭邏輯 ▼▼▼
 export function renderHeatmapDetailsTable() {
     const { details, roomType, areaRange } = state.lastHeatmapDetails || {};
     const metricType = state.currentHeatmapDetailMetric;
-
     const contentContainer = dom.heatmapDetailsContent;
 
     if (!details || details.length === 0) {
@@ -19,11 +18,14 @@ export function renderHeatmapDetailsTable() {
     
     dom.heatmapDetailsControls.classList.remove('hidden');
 
-    const metricLabel = {
+    const unitPriceMetricLabel = {
         median: '中位數(萬)',
         weighted: '加權平均(萬)',
         arithmetic: '算術平均(萬)'
     }[metricType];
+    
+    // 總價的標頭邏輯：當中位數時顯示中位數，否則一律顯示算術平均
+    const totalPriceMetricLabel = metricType === 'median' ? '中位數(萬)' : '算術平均(萬)';
 
     let tableHtml = `
         <h4 class="text-md font-semibold text-cyan-400 mb-2">詳細數據</h4>
@@ -38,23 +40,26 @@ export function renderHeatmapDetailsTable() {
                     </tr>
                     <tr>
                         <th class="p-2 text-center font-normal">區間(萬)</th>
-                        <th class="p-2 text-center font-normal">${metricLabel}</th>
+                        <th class="p-2 text-center font-normal">${totalPriceMetricLabel}</th>
                         <th class="p-2 text-center font-normal">區間(萬)</th>
-                        <th class="p-2 text-center font-normal">${metricLabel}</th>
+                        <th class="p-2 text-center font-normal">${unitPriceMetricLabel}</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
 
     details.forEach(item => {
-        const metricData = item.metrics[metricType];
+        // 根據選擇的 metricType 決定要顯示的總價數據
+        const totalPriceToShow = metricType === 'median' ? item.metrics.median.totalPrice : item.metrics.arithmetic.totalPrice;
+        const unitPriceToShow = item.metrics[metricType].unitPrice;
+
         tableHtml += `
             <tr class="border-b border-gray-700 hover:bg-dark-card">
                 <td class="p-2">${item.projectName} (${item.count}戶)</td>
                 <td class="p-2 text-center">${ui.formatNumber(item.priceRange.min, 0)} - ${ui.formatNumber(item.priceRange.max, 0)}</td>
-                <td class="p-2 text-center font-bold">${ui.formatNumber(metricData.totalPrice, 0)}</td>
+                <td class="p-2 text-center font-bold">${ui.formatNumber(totalPriceToShow, 0)}</td>
                 <td class="p-2 text-center">${ui.formatNumber(item.unitPriceRange.min, 2)} - ${ui.formatNumber(item.unitPriceRange.max, 2)}</td>
-                <td class="p-2 text-center font-bold">${ui.formatNumber(metricData.unitPrice, 2)}</td>
+                <td class="p-2 text-center font-bold">${ui.formatNumber(unitPriceToShow, 2)}</td>
             </tr>
         `;
     });
