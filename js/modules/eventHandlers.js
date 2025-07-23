@@ -261,6 +261,7 @@ export function switchAverageType(type) {
     if (state.analysisDataCache) { reportRenderer.renderUnitPriceReport(); }
 }
 
+// ▼▼▼ 【修改處】 ▼▼▼
 export function handlePriceBandRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn');
     if (!button) return;
@@ -269,6 +270,7 @@ export function handlePriceBandRoomFilterClick(e) {
 
     button.classList.toggle('active');
     
+    // 更新 state
     if (button.classList.contains('active')) {
         if (!state.selectedPriceBandRoomTypes.includes(roomType)) {
             state.selectedPriceBandRoomTypes.push(roomType);
@@ -277,8 +279,11 @@ export function handlePriceBandRoomFilterClick(e) {
         state.selectedPriceBandRoomTypes = state.selectedPriceBandRoomTypes.filter(r => r !== roomType);
     }
     
-    chartRenderer.renderPriceBandChart();
+    // 【核心修改】呼叫主渲染函式來更新整個區塊 (表格 + 圖表)
+    // 這會使其行為與 '房型去化分析' 的篩選器一致
+    reportRenderer.renderPriceBandReport();
 }
+// ▲▲▲ 【修改結束】 ▲▲▲
 
 export function handleVelocityRoomFilterClick(e) {
     const button = e.target.closest('.capsule-btn'); if (!button) return;
