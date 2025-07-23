@@ -362,21 +362,37 @@ export function renderAreaHeatmap() {
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                    // ▼▼▼ 【關鍵修正】使用與後端 `analysis-engine` 同步的房型分類邏輯 ▼▼▼
+                    // ▼▼▼ 【關鍵修正】使用與後端 `analysis-project-ranking` 同步的房型分類邏輯 ▼▼▼
                     const getRoomCategory = (record) => {
                         const rooms = record['房數'];
                         const buildingType = (record['建物型態'] || '');
                         const houseArea = record['房屋面積(坪)'];
                         const mainPurpose = (record['主要用途'] || '');
-
+                    
+                        // 規則 1: 店舖 (Shop)
                         if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
-                        if (buildingType.includes('工廠')) return '工廠';
-                        if (buildingType.includes('倉庫')) return '倉庫';
-                        if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) return '辦公';
-                        if (buildingType.includes('住宅大樓') && rooms === 0 && houseArea > 20) return '毛胚';
-                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 20) return '套房';
+                        
+                        // 規則 2: 廠辦/工廠
+                        if (buildingType.includes('工廠') || buildingType.includes('廠辦') || buildingType.includes('倉庫')) return '廠辦/工廠';
+                        
+                        // 規則 3: 辦公/事務所
+                        if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) {
+                            return '辦公/事務所';
+                        }
+                    
+                        // 規則 4: 毛胚 (Bare Shell)
+                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea > 35) {
+                            return '毛胚';
+                        }
+                    
+                        // 規則 5: 套房 (Studio Apartment)
+                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 35) {
+                            return '套房';
+                        }
+                        
+                        // 規則 6: 根據房數做最後的分類
                         if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
-                        if (rooms === 0) return '套房';
+                        if (rooms === 0) return '套房'; 
                         if (rooms >= 5) return '5房以上';
                         return `${rooms}房`;
                     };
@@ -388,7 +404,6 @@ export function renderAreaHeatmap() {
                         return txRoomType === roomType && txArea >= lower && txArea < upper;
                     });
 
-                    // ▼▼▼ 【修改處】更新資料聚合邏輯 ▼▼▼
                     const groupedByProject = matchingTransactions.reduce((acc, tx) => {
                         const projectName = tx['建案名稱'];
                         if (!acc[projectName]) {
@@ -426,12 +441,10 @@ export function renderAreaHeatmap() {
                             metrics: {
                                 median: { totalPrice: medianPrice, unitPrice: medianUnitPrice },
                                 arithmetic: { totalPrice: arithmeticAvgPrice, unitPrice: arithmeticAvgUnitPrice },
-                                // 對於總價，加權平均沒有標準定義，故顯示算術平均；單價則顯示正確的加權平均
                                 weighted: { totalPrice: arithmeticAvgPrice, unitPrice: weightedAvgUnitPrice }
                             }
                         };
                     }).sort((a, b) => b.count - a.count);
-                    // ▲▲▲ 【修改結束】 ▲▲▲
                     
                     state.lastHeatmapDetails = { details, roomType, areaRange };
                     renderHeatmapDetailsTable();
