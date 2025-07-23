@@ -51,36 +51,41 @@ export function renderPriceBandReport() {
 
     const allRoomTypes = [...new Set(priceBandAnalysis.map(item => item.roomType))];
     
-    // 統一排序邏輯
-    const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公/事務所', '工廠/倉庫', '其他'];
+    // 【修改 1】更新排序陣列
+    const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公/事務所', '工廠/廠辦', '其他'];
+
+    // 更新排序邏輯，以 '工廠/廠辦' 為基準
     allRoomTypes.sort((a, b) => {
-        const indexA = sortOrder.indexOf(a);
-        const indexB = sortOrder.indexOf(b);
+        const sortKeyA = a === '工廠/倉庫' ? '工廠/廠辦' : a;
+        const sortKeyB = b === '工廠/倉庫' ? '工廠/廠辦' : b;
+        const indexA = sortOrder.indexOf(sortKeyA);
+        const indexB = sortOrder.indexOf(sortKeyB);
         if (indexA !== -1 && indexB !== -1) return indexA - indexB;
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
         return a.localeCompare(b);
     });
 
-    // 統一預設選項邏輯 (僅在首次載入時設定)
     if (state.selectedPriceBandRoomTypes.length === 0) {
         const defaultSelections = ['套房', '1房', '2房', '3房', '4房', '毛胚'];
         state.selectedPriceBandRoomTypes = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
     }
 
-    // 渲染篩選器按鈕
+    // 【修改 2】渲染按鈕時，替換顯示文字，但 data-room-type 保留原始值
     dom.priceBandRoomFilterContainer.innerHTML = allRoomTypes.map(roomType => {
+        const displayRoomType = roomType === '工廠/倉庫' ? '工廠/廠辦' : roomType;
         const isActive = state.selectedPriceBandRoomTypes.includes(roomType);
-        return `<button class="capsule-btn ${isActive ? 'active' : ''}" data-room-type="${roomType}">${roomType}</button>`;
+        return `<button class="capsule-btn ${isActive ? 'active' : ''}" data-room-type="${roomType}">${displayRoomType}</button>`;
     }).join('');
 
-    // 【核心修改】根據 state.selectedPriceBandRoomTypes 過濾表格資料
     const filteredDataForTable = priceBandAnalysis.filter(item => state.selectedPriceBandRoomTypes.includes(item.roomType));
 
-    // 對過濾後的資料進行排序，以確保表格顯示順序穩定
+    // 同樣更新表格的排序邏輯
     filteredDataForTable.sort((a, b) => { 
-        const indexA = sortOrder.indexOf(a.roomType);
-        const indexB = sortOrder.indexOf(b.roomType);
+        const sortKeyA = a.roomType === '工廠/倉庫' ? '工廠/廠辦' : a.roomType;
+        const sortKeyB = b.roomType === '工廠/倉庫' ? '工廠/廠辦' : b.roomType;
+        const indexA = sortOrder.indexOf(sortKeyA);
+        const indexB = sortOrder.indexOf(sortKeyB);
         if (indexA !== indexB) return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
         return (a.bathrooms || 0) - (b.bathrooms || 0);
     });
@@ -90,10 +95,11 @@ export function renderPriceBandReport() {
     let headerHtml = '<thead><tr>' + tableHeaders.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
     let bodyHtml = '<tbody>';
 
-    // 使用過濾後的資料來產生表格內容
     if (filteredDataForTable.length > 0) {
+        // 【修改 3】渲染表格時，同樣替換顯示文字
         filteredDataForTable.forEach(item => { 
-            bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${item.roomType}</td><td>${item.bathrooms !== null ? item.bathrooms : '-'}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.minPrice, 0)}</td><td>${ui.formatNumber(item.q1Price, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td><td>${ui.formatNumber(item.maxPrice, 0)}</td></tr>`; 
+            const displayRoomType = item.roomType === '工廠/倉庫' ? '工廠/廠辦' : item.roomType;
+            bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${displayRoomType}</td><td>${item.bathrooms !== null ? item.bathrooms : '-'}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.minPrice, 0)}</td><td>${ui.formatNumber(item.q1Price, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td><td>${ui.formatNumber(item.maxPrice, 0)}</td></tr>`; 
         });
     } else {
         bodyHtml += `<tr><td colspan="${tableHeaders.length}" class="text-center p-4 text-gray-500">請至少選擇一個房型以顯示數據</td></tr>`;
@@ -102,7 +108,6 @@ export function renderPriceBandReport() {
     bodyHtml += '</tbody>';
     dom.priceBandTable.innerHTML = headerHtml + bodyHtml;
 
-    // 渲染圖表（圖表渲染函式內部已使用 state 進行過濾）
     renderPriceBandChart();
 }
 // ▲▲▲ 【修改結束】 ▲▲▲
