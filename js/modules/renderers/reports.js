@@ -43,6 +43,102 @@ export function renderRankingReport() {
     renderRankingPagination(projectRanking.length);
 }
 
+export function renderAreaDistributionReport() {
+    // 從 state 中獲取後端傳來的分析資料
+    const analysisData = state.analysisDataCache?.areaDistributionAnalysis;
+
+    // 檢查是否有合法的資料，沒有就直接返回，避免錯誤
+    if (!analysisData || !analysisData.series || !analysisData.categories || analysisData.series.length === 0) {
+        // 如果沒有資料，可以選擇隱藏圖表或顯示提示訊息
+        dom.areaDistributionChartContainer.innerHTML = '<div class="p-4 text-center text-gray-500">此篩選條件下無面積分佈資料可供顯示。</div>';
+        return;
+    }
+
+    // 從後端資料中直接解構出 series 和 categories
+    const { series, categories } = analysisData;
+
+    // 設定圖表選項
+    const options = {
+        series: series, // 直接使用後端整理好的 series
+        chart: {
+            height: 450,
+            type: 'heatmap',
+            toolbar: {
+                show: true,
+                tools: {
+                    download: true,
+                    selection: false,
+                    zoom: false,
+                    zoomin: false,
+                    zoomout: false,
+                    pan: false,
+                    reset: false
+                }
+            }
+        },
+        plotOptions: {
+            heatmap: {
+                shadeIntensity: 0.5,
+                radius: 0,
+                useFillColorAsStroke: true,
+                colorScale: {
+                    ranges: [
+                        { from: 0, to: 0, name: '0', color: '#4A5568' },
+                        { from: 1, to: 5, name: '1-5', color: '#529b2f' },
+                        { from: 6, to: 10, name: '6-10', color: '#95d475' },
+                        { from: 11, to: 20, name: '11-20', color: '#f5c842' },
+                        { from: 21, to: 50, name: '21-50', color: '#ff772a' },
+                        { from: 51, to: 9999, name: '51+', color: '#e74c3c' }
+                    ]
+                }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            style: {
+                colors: ['#000']
+            }
+        },
+        xaxis: {
+            categories: categories, // 直接使用後端整理好的 categories
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    colors: '#FFFFFF' // 確保 Y 軸標籤在深色主題下可見
+                }
+            }
+        },
+        tooltip: {
+            theme: 'dark',
+            y: {
+                formatter: function (value, { series, seriesIndex, dataPointIndex, w }) {
+                    const seriesName = w.globals.seriesNames[seriesIndex];
+                    return `${seriesName}: ${value} 戶`;
+                }
+            }
+        },
+        grid: {
+            borderColor: '#555'
+        },
+        theme: {
+            mode: 'dark'
+        }
+    };
+
+    // 如果圖表已存在，更新選項；否則，創建新圖表
+    if (state.charts.areaDistribution) {
+        state.charts.areaDistribution.updateOptions(options);
+    } else {
+        // 清空容器，確保舊的提示訊息被移除
+        dom.areaDistributionChartContainer.innerHTML = '';
+        // 創建新的圖表實例
+        state.charts.areaDistribution = new ApexCharts(dom.areaDistributionChartContainer, options);
+        state.charts.areaDistribution.render();
+    }
+}
+
+
 // ▼▼▼ 【修改處】 ▼▼▼
 // ▼▼▼ 【修改處】 ▼▼▼
 export function renderPriceBandReport() {
