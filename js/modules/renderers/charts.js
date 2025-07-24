@@ -362,9 +362,8 @@ export function renderAreaHeatmap() {
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                    // ▼▼▼【這就是修改的核心】▼▼▼
-                    // 舊的、有問題的分類邏輯被移除，換成下面這套與後端完全同步的標準邏輯。
-                    // 這確保了前端在「篩選詳細資料」時，使用的標準與後端「產生圖表數據」時完全一致。
+                    // ▼▼▼【已根據您的要求修正】▼▼▼
+                    // 移除第四站邏輯，不符合前三站的都歸類為"其他"
                     const getRoomCategory = (record) => {
                         const buildingType = record['建物型態'] || '';
                         const mainPurpose = record['主要用途'] || '';
@@ -392,12 +391,12 @@ export function renderAreaHeatmap() {
                             if (rooms >= 5) return '5房以上';
                         }
                         
-                        // 優先級 4: 其他情況的備用邏輯
-                        if (rooms === 0) return '套房';
+                        // ▼▼▼【第四站備用邏輯已移除】▼▼▼
 
-                        return '其他'; // 最終備用選項
+                        // 最終備用選項：以上皆不符合者，歸於此類
+                        return '其他'; 
                     };
-                    // ▲▲▲【修改核心結束】▲▲▲
+                    // ▲▲▲【修改結束】▲▲▲
 
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
@@ -438,7 +437,7 @@ export function renderAreaHeatmap() {
                             projectName: projectName,
                             count: txs.length,
                             priceRange: { min: prices.length > 0 ? prices[0] : 0, max: prices.length > 0 ? prices[prices.length - 1] : 0 },
-                            unitPriceRange: { min: unitPrices.length > 0 ? unitPrices[0] : 0, max: unitPrices.length > 0 ? unitPrices[unitPrices.length - 1] : 0 },
+                            unitPriceRange: { min: unitPrices.length > 0 ? unitPrices[0] : 0, max: unitPrices.length > 0 ? unitPrices[prices.length - 1] : 0 },
                             metrics: {
                                 median: { totalPrice: medianPrice, unitPrice: medianUnitPrice },
                                 arithmetic: { totalPrice: arithmeticAvgPrice, unitPrice: arithmeticAvgUnitPrice },
