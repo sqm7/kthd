@@ -1,5 +1,3 @@
-// js/modules/renderers/charts.js
-
 import { dom } from '../dom.js';
 import { state } from '../state.js';
 import { renderHeatmapDetailsTable } from './tables.js';
@@ -291,6 +289,9 @@ function generateColorRanges(maxValue) {
 }
 
 
+/**
+ * 渲染房型面積分佈熱力圖
+ */
 export function renderAreaHeatmap() {
     if (state.areaHeatmapChart) {
         state.areaHeatmapChart.destroy();
@@ -307,18 +308,22 @@ export function renderAreaHeatmap() {
     const userMaxArea = parseFloat(dom.heatmapMaxAreaInput.value);
 
     let allAreas = [];
-    state.selectedVelocityRooms.forEach(roomType => {
+    // 使用所有房型資料來計算總面積範圍，而不是僅用已選的
+    Object.keys(distributionData).forEach(roomType => {
         if (distributionData[roomType]) {
-            const filteredAreas = distributionData[roomType].filter(area => area >= userMinArea && area <= userMaxArea);
-            allAreas.push(...filteredAreas);
+            allAreas.push(...distributionData[roomType]);
         }
     });
 
-    if (allAreas.length === 0 || isNaN(interval) || interval <= 0 || isNaN(userMinArea) || isNaN(userMaxArea) || userMinArea >= userMaxArea) {
+    // 過濾出在用戶指定範圍內的面積
+    const filteredAreas = allAreas.filter(area => area >= userMinArea && area <= userMaxArea);
+
+    if (filteredAreas.length === 0 || isNaN(interval) || interval <= 0 || isNaN(userMinArea) || isNaN(userMaxArea) || userMinArea >= userMaxArea) {
         dom.areaHeatmapChart.innerHTML = '<p class="text-gray-500 p-4 text-center">在此面積範圍內無資料，或範圍/級距設定無效。</p>';
         return;
     }
-
+    
+    // 從過濾後的資料決定Y軸級距
     const yAxisCategories = [];
     for (let i = userMinArea; i < userMaxArea; i += interval) {
         yAxisCategories.push(`${i.toFixed(1)}-${(i + interval).toFixed(1)}`);
@@ -329,7 +334,7 @@ export function renderAreaHeatmap() {
         const [lower, upper] = category.split('-').map(parseFloat);
         const dataPoints = state.selectedVelocityRooms.map(roomType => {
             const roomData = distributionData[roomType] || [];
-            const count = roomData.filter(area => area >= lower && area < upper && area >= userMinArea && area <= userMaxArea).length;
+            const count = roomData.filter(area => area >= lower && area < upper).length;
             if (count > maxValue) {
                 maxValue = count;
             }
@@ -339,11 +344,10 @@ export function renderAreaHeatmap() {
             name: category,
             data: dataPoints
         };
-    });
+    }).reverse(); // 反轉讓小坪數在下方
 
     const colorRanges = generateColorRanges(maxValue);
-
-    const dynamicHeight = Math.max(400, yAxisCategories.length * 22);
+    const dynamicHeight = Math.max(400, yAxisCategories.length * 25 + 100);
 
     const options = {
         series: seriesData,
@@ -357,31 +361,30 @@ export function renderAreaHeatmap() {
                 dataPointSelection: (event, chartContext, config) => {
                     const { seriesIndex, dataPointIndex } = config;
                     if (seriesIndex < 0 || dataPointIndex < 0) return;
-
-                    const areaRange = config.w.globals.seriesNames[seriesIndex];
+                    
+                    // 因為 seriesData 反轉了，所以 seriesIndex 需要轉換回來
+                    const originalSeriesIndex = seriesData.length - 1 - seriesIndex;
+                    const areaRange = yAxisCategories[originalSeriesIndex];
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                                        // ▼▼▼ 【關鍵修正】替換此處的 getRoomCategory 函式 ▼▼▼
+                    // 【核心修正】在這裡定義與後端一致的房型分類邏輯
                     const getRoomCategory = (record) => {
                         const buildingType = (record['建物型態'] || '');
                         const mainPurpose = (record['主要用途'] || '');
                         const rooms = record['房數'];
                         const houseArea = record['房屋面積(坪)'];
                     
-                        // 優先級 1: 特殊商業用途
                         if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
                         if (buildingType.includes('工廠') || buildingType.includes('倉庫') || buildingType.includes('廠辦')) return '廠辦/工廠';
                         if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) return '辦公/事務所';
                     
-                        // 優先級 2: 特殊住宅格局 (0房)
                         const isResidentialBuilding = buildingType.includes('住宅大樓') || buildingType.includes('華廈');
                         if (isResidentialBuilding && rooms === 0) {
                             if (houseArea > 35) return '毛胚';
                             if (houseArea <= 35) return '套房';
                         }
                     
-                        // 優先級 3: 標準住宅房型
                         if (typeof rooms === 'number' && !isNaN(rooms)) {
                             if (rooms === 1) return '1房';
                             if (rooms === 2) return '2房';
@@ -390,40 +393,28 @@ export function renderAreaHeatmap() {
                             if (rooms >= 5) return '5房以上';
                         }
                         
-                        // 優先級 4: 其他 0 房的情況 (例如 '公寓')
                         if (rooms === 0) return '套房';
                     
-                        // 最後的備用選項
                         return '其他';
                     };
-                    // ▲▲▲ 【修正結束】 ▲▲▲
 
-        // ▼▼▼ 請將下方的偵錯程式碼貼在這裡 ▼▼▼
-        console.log("--- DEBUG START ---");
-        console.log(`點擊的房型: "${roomType}" | 點擊的面積區間: "${areaRange}"`);
+                    // --- DEBUG START ---
+                    console.log("--- DEBUG START ---");
+                    console.log(`點擊的房型: "${roomType}" | 點擊的面積區間: "${areaRange}" [${lower}, ${upper})`);
+            
+                    const allTargetTypeTransactions = state.analysisDataCache.transactionDetails.filter(tx => getRoomCategory(tx) === roomType);
+                    console.log(`資料庫中所有被歸類為「${roomType}」的交易 (共 ${allTargetTypeTransactions.length} 筆):`, allTargetTypeTransactions);
+            
+                    const expectedTransactions = allTargetTypeTransactions.filter(tx => {
+                        const txArea = tx['房屋面積(坪)'];
+                        return txArea >= lower && txArea < upper;
+                    });
+                    console.log(`在 [${lower}, ${upper}) 坪數區間內，預期應有 ${expectedTransactions.length} 筆「${roomType}」交易:`, expectedTransactions);
+                    
+                    console.log("--- DEBUG END ---");
+                    // --- DEBUG END ---
 
-        // 找出理論上應該屬於「其他」的交易
-        const allOthers = state.analysisDataCache.transactionDetails.filter(tx => getRoomCategory(tx) === '其他');
-        console.log(`資料庫中所有被歸類為「其他」的交易 (共 ${allOthers.length} 筆):`, allOthers);
-
-        // 檢查在點擊的面積區間內，有多少筆「其他」交易
-        const expectedTransactions = allOthers.filter(tx => {
-            const txArea = tx['房屋面積(坪)'];
-            return txArea >= lower && txArea < upper;
-        });
-        console.log(`在 [${lower}, ${upper}) 坪數區間內，預期應有 ${expectedTransactions.length} 筆「其他」交易:`, expectedTransactions);
-        
-        console.log("--- DEBUG END ---");
-        // ▲▲▲ 偵錯程式碼結束 ▲▲▲
-
-
-        const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
-            const txRoomType = getRoomCategory(tx);
-            const txArea = tx['房屋面積(坪)'];
-            return txRoomType === roomType && txArea >= lower && txArea < upper;
-        });
-
-
+                    // 【核心修正】使用 getRoomCategory 函式來篩選所有交易，而不是依賴 pre-filtered data
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
                         const txArea = tx['房屋面積(坪)'];
@@ -463,7 +454,7 @@ export function renderAreaHeatmap() {
                             projectName: projectName,
                             count: txs.length,
                             priceRange: { min: prices.length > 0 ? prices[0] : 0, max: prices.length > 0 ? prices[prices.length - 1] : 0 },
-                            unitPriceRange: { min: unitPrices.length > 0 ? unitPrices[0] : 0, max: unitPrices.length > 0 ? unitPrices[unitPrices.length - 1] : 0 },
+                            unitPriceRange: { min: unitPrices.length > 0 ? unitPrices[0] : 0, max: unitPrices.length > 0 ? unitPrices[prices.length - 1] : 0 },
                             metrics: {
                                 median: { totalPrice: medianPrice, unitPrice: medianUnitPrice },
                                 arithmetic: { totalPrice: arithmeticAvgPrice, unitPrice: arithmeticAvgUnitPrice },
@@ -520,17 +511,12 @@ export function renderAreaHeatmap() {
             }
         },
         yaxis: {
+            // yAxisCategories is already reversed for display
+            categories: yAxisCategories.reverse(),
             labels: {
                 style: {
                     fontSize: '12px',
                 },
-                formatter: (value) => {
-                    if (typeof value === 'string' && value.includes('-')) {
-                        const parts = value.split('-');
-                        return `${parseFloat(parts[0]).toFixed(1)}-${parseFloat(parts[1]).toFixed(1)}`;
-                    }
-                    return value;
-                }
             }
         },
         title: {
