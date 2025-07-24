@@ -362,39 +362,39 @@ export function renderAreaHeatmap() {
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                    // ▼▼▼ 【關鍵修正】使用與後端 `analysis-project-ranking` 同步的房型分類邏輯 ▼▼▼
+                    // ▼▼▼ 【BUG修正處】 ▼▼▼
+                    // 將此處的房型分類邏輯，替換成與後端 analysis-engine.ts 完全同步的版本
                     const getRoomCategory = (record) => {
+                        const buildingType = record['建物型態'] || '';
+                        const mainPurpose = record['主要用途'] || '';
                         const rooms = record['房數'];
-                        const buildingType = (record['建物型態'] || '');
                         const houseArea = record['房屋面積(坪)'];
-                        const mainPurpose = (record['主要用途'] || '');
-                    
-                        // 規則 1: 店舖 (Shop)
+
+                        // 優先級 1: 特殊商業用途
                         if (buildingType.includes('店舖') || buildingType.includes('店面')) return '店舖';
-                        
-                        // 規則 2: 廠辦/工廠
-                        if (buildingType.includes('工廠') || buildingType.includes('廠辦') || buildingType.includes('倉庫')) return '廠辦/工廠';
-                        
-                        // 規則 3: 辦公/事務所
-                        if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) {
-                            return '辦公/事務所';
+                        if (buildingType.includes('工廠') || buildingType.includes('倉庫') || buildingType.includes('廠辦')) return '廠辦/工廠';
+                        if (mainPurpose.includes('商業') || buildingType.includes('辦公') || buildingType.includes('事務所')) return '辦公/事務所';
+
+                        // 優先級 2: 特殊住宅格局 (0房)
+                        const isResidentialBuilding = buildingType.includes('住宅大樓') || buildingType.includes('華廈');
+                        if (isResidentialBuilding && rooms === 0) {
+                            if (houseArea > 35) return '毛胚';
+                            if (houseArea <= 35) return '套房';
                         }
-                    
-                        // 規則 4: 毛胚 (Bare Shell)
-                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea > 35) {
-                            return '毛胚';
-                        }
-                    
-                        // 規則 5: 套房 (Studio Apartment)
-                        if ((buildingType.includes('住宅大樓') || buildingType.includes('華廈')) && rooms === 0 && houseArea <= 35) {
-                            return '套房';
+
+                        // 優先級 3: 標準住宅房型
+                        if (typeof rooms === 'number' && !isNaN(rooms)) {
+                            if (rooms === 1) return '1房';
+                            if (rooms === 2) return '2房';
+                            if (rooms === 3) return '3房';
+                            if (rooms === 4) return '4房';
+                            if (rooms >= 5) return '5房以上';
                         }
                         
-                        // 規則 6: 根據房數做最後的分類
-                        if (rooms === null || typeof rooms !== 'number' || isNaN(rooms)) return '其他';
-                        if (rooms === 0) return '套房'; 
-                        if (rooms >= 5) return '5房以上';
-                        return `${rooms}房`;
+                        // 優先級 4: 其他情況的備用邏輯
+                        if (rooms === 0) return '套房';
+
+                        return '其他'; // 最終備用選項
                     };
                     // ▲▲▲ 【修正結束】 ▲▲▲
 
