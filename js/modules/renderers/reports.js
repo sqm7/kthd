@@ -186,8 +186,22 @@ export function renderParkingAnalysisReport() {
 
 export function renderSalesVelocityReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
+    
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
+
     if (allRoomTypes && allRoomTypes.length > 0) {
+        // ▼▼▼ 【新增處】在此處加入與總價帶分析相同的排序邏輯 ▼▼▼
+        const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公/事務所', '廠辦/工廠', '其他'];
+        allRoomTypes.sort((a, b) => {
+            const indexA = sortOrder.indexOf(a);
+            const indexB = sortOrder.indexOf(b);
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+        // ▲▲▲ 【新增結束】 ▲▲▲
+
         const defaultSelections = ['1房', '2房', '3房'];
         state.selectedVelocityRooms = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
         if (state.selectedVelocityRooms.length === 0) {
