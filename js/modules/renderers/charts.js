@@ -398,6 +398,31 @@ export function renderAreaHeatmap() {
                     };
                     // ▲▲▲ 【修正結束】 ▲▲▲
 
+        // ▼▼▼ 請將下方的偵錯程式碼貼在這裡 ▼▼▼
+        console.log("--- DEBUG START ---");
+        console.log(`點擊的房型: "${roomType}" | 點擊的面積區間: "${areaRange}"`);
+
+        // 找出理論上應該屬於「其他」的交易
+        const allOthers = state.analysisDataCache.transactionDetails.filter(tx => getRoomCategory(tx) === '其他');
+        console.log(`資料庫中所有被歸類為「其他」的交易 (共 ${allOthers.length} 筆):`, allOthers);
+
+        // 檢查在點擊的面積區間內，有多少筆「其他」交易
+        const expectedTransactions = allOthers.filter(tx => {
+            const txArea = tx['房屋面積(坪)'];
+            return txArea >= lower && txArea < upper;
+        });
+        console.log(`在 [${lower}, ${upper}) 坪數區間內，預期應有 ${expectedTransactions.length} 筆「其他」交易:`, expectedTransactions);
+        
+        console.log("--- DEBUG END ---");
+        // ▲▲▲ 偵錯程式碼結束 ▲▲▲
+
+
+        const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
+            const txRoomType = getRoomCategory(tx);
+            const txArea = tx['房屋面積(坪)'];
+            return txRoomType === roomType && txArea >= lower && txArea < upper;
+        });
+
 
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
