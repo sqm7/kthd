@@ -362,8 +362,9 @@ export function renderAreaHeatmap() {
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                    // ▼▼▼ 【BUG修正處】 ▼▼▼
-                    // 將此處的房型分類邏輯，替換成與後端 analysis-engine.ts 完全同步的版本
+                    // ▼▼▼【這就是修改的核心】▼▼▼
+                    // 舊的、有問題的分類邏輯被移除，換成下面這套與後端完全同步的標準邏輯。
+                    // 這確保了前端在「篩選詳細資料」時，使用的標準與後端「產生圖表數據」時完全一致。
                     const getRoomCategory = (record) => {
                         const buildingType = record['建物型態'] || '';
                         const mainPurpose = record['主要用途'] || '';
@@ -396,7 +397,7 @@ export function renderAreaHeatmap() {
 
                         return '其他'; // 最終備用選項
                     };
-                    // ▲▲▲ 【修正結束】 ▲▲▲
+                    // ▲▲▲【修改核心結束】▲▲▲
 
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
