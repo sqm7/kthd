@@ -308,14 +308,12 @@ export function renderAreaHeatmap() {
     const userMaxArea = parseFloat(dom.heatmapMaxAreaInput.value);
 
     let allAreas = [];
-    // 使用所有房型資料來計算總面積範圍，而不是僅用已選的
     Object.keys(distributionData).forEach(roomType => {
         if (distributionData[roomType]) {
             allAreas.push(...distributionData[roomType]);
         }
     });
 
-    // 過濾出在用戶指定範圍內的面積
     const filteredAreas = allAreas.filter(area => area >= userMinArea && area <= userMaxArea);
 
     if (filteredAreas.length === 0 || isNaN(interval) || interval <= 0 || isNaN(userMinArea) || isNaN(userMaxArea) || userMinArea >= userMaxArea) {
@@ -323,7 +321,6 @@ export function renderAreaHeatmap() {
         return;
     }
     
-    // 從過濾後的資料決定Y軸級距
     const yAxisCategories = [];
     for (let i = userMinArea; i < userMaxArea; i += interval) {
         yAxisCategories.push(`${i.toFixed(1)}-${(i + interval).toFixed(1)}`);
@@ -344,7 +341,7 @@ export function renderAreaHeatmap() {
             name: category,
             data: dataPoints
         };
-    }).reverse(); // 反轉讓小坪數在下方
+    }).reverse();
 
     const colorRanges = generateColorRanges(maxValue);
     const dynamicHeight = Math.max(400, yAxisCategories.length * 25 + 100);
@@ -362,13 +359,11 @@ export function renderAreaHeatmap() {
                     const { seriesIndex, dataPointIndex } = config;
                     if (seriesIndex < 0 || dataPointIndex < 0) return;
                     
-                    // 因為 seriesData 反轉了，所以 seriesIndex 需要轉換回來
                     const originalSeriesIndex = seriesData.length - 1 - seriesIndex;
                     const areaRange = yAxisCategories[originalSeriesIndex];
                     const roomType = state.selectedVelocityRooms[dataPointIndex];
                     const [lower, upper] = areaRange.split('-').map(parseFloat);
 
-                    // 【核心修正】在這裡定義與後端一致的房型分類邏輯
                     const getRoomCategory = (record) => {
                         const buildingType = (record['建物型態'] || '');
                         const mainPurpose = (record['主要用途'] || '');
@@ -414,12 +409,13 @@ export function renderAreaHeatmap() {
                     console.log("--- DEBUG END ---");
                     // --- DEBUG END ---
 
-                    // 【核心修正】使用 getRoomCategory 函式來篩選所有交易，而不是依賴 pre-filtered data
+                    // ▼▼▼ 【最終修正】移除重複的宣告，只保留這一行 ▼▼▼
                     const matchingTransactions = state.analysisDataCache.transactionDetails.filter(tx => {
                         const txRoomType = getRoomCategory(tx);
                         const txArea = tx['房屋面積(坪)'];
                         return txRoomType === roomType && txArea >= lower && txArea < upper;
                     });
+                    // ▲▲▲ 【最終修正】 ▲▲▲
 
                     const groupedByProject = matchingTransactions.reduce((acc, tx) => {
                         const projectName = tx['建案名稱'];
@@ -437,15 +433,12 @@ export function renderAreaHeatmap() {
                         
                         const safeDivide = (a, b) => b > 0 ? a / b : 0;
 
-                        // 中位數
                         const medianPrice = prices.length > 0 ? (prices.length % 2 === 0 ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2 : prices[Math.floor(prices.length / 2)]) : 0;
                         const medianUnitPrice = unitPrices.length > 0 ? (unitPrices.length % 2 === 0 ? (unitPrices[unitPrices.length / 2 - 1] + unitPrices[unitPrices.length / 2]) / 2 : unitPrices[Math.floor(unitPrices.length / 2)]) : 0;
                         
-                        // 算術平均
                         const arithmeticAvgPrice = safeDivide(prices.reduce((s, p) => s + p, 0), prices.length);
                         const arithmeticAvgUnitPrice = safeDivide(unitPrices.reduce((s, p) => s + p, 0), unitPrices.length);
 
-                        // 加權平均
                         const totalHousePrice = txs.reduce((s, t) => s + (t['房屋總價(萬)'] || 0), 0);
                         const totalArea = txs.reduce((s, t) => s + (t['房屋面積(坪)'] || 0), 0);
                         const weightedAvgUnitPrice = safeDivide(totalHousePrice, totalArea);
@@ -511,7 +504,6 @@ export function renderAreaHeatmap() {
             }
         },
         yaxis: {
-            // yAxisCategories is already reversed for display
             categories: yAxisCategories.reverse(),
             labels: {
                 style: {
