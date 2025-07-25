@@ -1,154 +1,122 @@
-// supabase_project/js/modules/ui.js (修正後)
+// js/modules/ui.js
 
 import { dom } from './dom.js';
-import { state } from './state.js';
-import * as reportRenderer from './renderers/reports.js';
 
-/**
- * 格式化日期為 YYYY-MM-DD
- * @param {Date} date - 日期物件
- * @returns {string} 格式化後的日期字串
- */
+export function showLoading(message) {
+    dom.messageArea.innerHTML = `<div class="loader mx-auto"></div><p class="mt-4">${message}</p>`;
+    dom.messageArea.classList.remove('hidden');
+    dom.tabsContainer.classList.add('hidden');
+    document.querySelectorAll('.report-header').forEach(el => el.style.display = 'none');
+    ['ranking-report-content', 'price-band-report-content', 'unit-price-report-content', 'parking-report-content', 'velocity-report-content', 'price-grid-report-content', 'data-list-content'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    });
+}
+
+export function showMessage(message, isError = false) {
+    const messageClass = isError ? 'bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg' : '';
+    dom.messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+    dom.messageArea.classList.remove('hidden');
+    dom.tabsContainer.classList.add('hidden');
+    document.querySelectorAll('.report-header').forEach(el => el.style.display = 'none');
+}
+
+export function formatNumber(num, decimals = 2) {
+    if (typeof num !== 'number' || isNaN(num)) return '-';
+    return num.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
 export function formatDate(date) {
     return date.toISOString().split('T')[0];
 }
 
-/**
- * 顯示訊息
- * @param {string} message - 要顯示的訊息
- * @param {boolean} isError - 是否為錯誤訊息
- */
-export function showMessage(message, isError = false) {
-    dom.messageArea.textContent = message;
-    dom.messageArea.className = `text-center p-8 ${isError ? 'text-red-400' : 'text-gray-400'}`;
-    dom.messageArea.classList.remove('hidden');
-    dom.tabsContainer.classList.add('hidden');
-    
-    // 隱藏所有報告內容
-    const allContent = document.querySelectorAll('.tab-content');
-    allContent.forEach(content => content.classList.add('hidden'));
+export function switchTab(targetTab) {
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+    const contentEl = document.getElementById(`${targetTab}-content`);
+    const buttonEl = document.querySelector(`button[data-tab="${targetTab}"]`);
+    if(contentEl) contentEl.classList.add('active');
+    if(buttonEl) buttonEl.classList.add('active');
+
+    // 這段邏輯因為與 renderAreaHeatmap 耦合，暫時保留在 app.js 中處理
+    // if (targetTab === 'velocity-report' && analysisDataCache) {
+    //     renderAreaHeatmap();
+    // }
 }
 
-/**
- * 隱藏訊息區域
- */
-export function hideMessage() {
-    dom.messageArea.classList.add('hidden');
-    dom.tabsContainer.classList.remove('hidden');
-}
-
-/**
- * 更新多選標籤的顯示
- * @param {HTMLElement} container - 標籤容器
- * @param {string[]} items - 要顯示的項目陣列
- * @param {string} placeholder - 沒有項目時的預留文字
- * @param {string} type - 類型 ('district' or 'project')
- */
-export function updateMultiSelectTags(container, items, placeholder, type) {
-    const inputElement = type === 'district' ? dom.districtInputArea : dom.projectNameInput;
-    const clearBtn = type === 'district' ? dom.clearDistrictsBtn : dom.clearProjectsBtn;
-
-    container.querySelectorAll('.multi-tag').forEach(tag => tag.remove());
-    
-    if (items.length > 0) {
-        items.forEach(item => {
-            const tag = document.createElement('div');
-            tag.className = 'multi-tag';
-            tag.textContent = item;
-            const removeBtn = document.createElement('span');
-            removeBtn.className = 'multi-tag-remove';
-            removeBtn.innerHTML = '&times;';
-            removeBtn.dataset.name = item;
-            tag.appendChild(removeBtn);
-            container.insertBefore(tag, inputElement);
-        });
-        inputElement.placeholder = '新增更多...';
-        clearBtn.classList.remove('hidden');
-    } else {
-        inputElement.placeholder = placeholder;
-        clearBtn.classList.add('hidden');
-    }
-}
-
-
-/**
- * 顯示建議列表
- * @param {string[]} suggestions - 建議項目陣列
- * @param {HTMLElement} container - 建議列表的容器
- * @param {string} type - 'district' 或 'project'
- */
-export function showSuggestions(suggestions, container, type) {
+export function createPaginationControls(container, totalItems, currentPage, pageSize, onPageChange) {
     container.innerHTML = '';
-    if (suggestions.length === 0) {
-        container.classList.add('hidden');
+    if (totalItems === 0) {
+        container.innerHTML = `<span>共 0 筆資料</span>`;
         return;
     }
-    suggestions.forEach(suggestion => {
-        const div = document.createElement('div');
-        div.textContent = suggestion;
-        div.className = 'p-2 hover:bg-gray-700 cursor-pointer suggestion-item';
-        div.dataset.type = type;
-        div.dataset.value = suggestion;
-        container.appendChild(div);
-    });
-    container.classList.remove('hidden');
-}
 
+    const totalPages = Math.ceil(totalItems / pageSize);
+    let paginationHtml = `<div class="flex-1">共 ${totalItems} 筆資料</div><div class="flex items-center space-x-1">`;
+    
+    paginationHtml += `<button class="pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
 
-/**
- * 切換頁籤 (這是修正雙重捲軸問題的核心)
- * @param {string} tabId - 要顯示的頁籤ID
- * @param {boolean} pushState - 是否更新瀏覽器歷史紀錄
- */
-export function switchTab(tabId, pushState = true) {
-    // 更新URL
-    if (pushState) {
-        const url = new URL(window.location);
-        url.searchParams.set('tab', tabId);
-        window.history.pushState({ tabId }, '', url);
-    }
-    state.activeTab = tabId;
-
-    // 更新按鈕樣式
-    dom.tabsContainer.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabId);
-    });
-
-    // 隱藏所有內容區塊
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.add('hidden');
-    });
-
-    // 顯示目標內容區塊
-    const activeContent = document.getElementById(`${tabId}-content`);
-    if (activeContent) {
-        activeContent.classList.remove('hidden');
-    }
-
-    // =================================================================
-    // ▼▼▼ 這是最關鍵的修正 ▼▼▼
-    // =================================================================
-    // 只有在不是「垂直水平分析」(銷控表) 的頁籤時，才去設定最小高度
-    // 如果是銷控表，則將最小高度設為 'auto'，讓它可以自由延展，從而消除內部捲軸
-    const resultsContainer = dom.resultsContainer;
-    if (tabId === 'price-grid-report') {
-        resultsContainer.style.minHeight = 'auto'; 
+    let startPage, endPage;
+    if (totalPages <= 9) {
+        startPage = 1;
+        endPage = totalPages;
     } else {
-        // 對於其他頁籤，維持原有的高度計算，以避免頁面跳動
-        if (activeContent) {
-            // 使用 requestAnimationFrame 確保在下一次重繪前計算高度，避免閃爍
-            requestAnimationFrame(() => {
-                const contentHeight = activeContent.scrollHeight;
-                resultsContainer.style.minHeight = `${contentHeight}px`;
-            });
+        if (currentPage <= 5) {
+            startPage = 1;
+            endPage = 7;
+        } else if (currentPage + 4 >= totalPages) {
+            startPage = totalPages - 8;
+            endPage = totalPages;
+        } else {
+            startPage = currentPage - 4;
+            endPage = currentPage + 3;
         }
     }
-    // =================================================================
-    // ▲▲▲ 修正結束 ▲▲▲
-    // =================================================================
 
-    // 如果切換到資料列表，重新渲染表格和分頁
-    if (tabId === 'data-list' && state.currentData) {
-        reportRenderer.renderTable(state.currentData, state.currentPage);
+    if (startPage > 1) {
+        paginationHtml += `<button class="pagination-btn" data-page="1">1</button>`;
+        if (startPage > 2) {
+            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === currentPage ? 'active' : '';
+        paginationHtml += `<button class="pagination-btn ${activeClass}" data-page="${i}">${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+        }
+        paginationHtml += `<button class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    paginationHtml += `<button class="pagination-btn" data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>&raquo;</button>`;
+    paginationHtml += '</div>';
+    
+    container.innerHTML = paginationHtml;
+    
+    container.querySelectorAll('.pagination-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const page = parseInt(e.currentTarget.dataset.page);
+            if (!isNaN(page)) {
+                onPageChange(page);
+            }
+        });
+    });
+
+    const styleId = 'pagination-styles';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            .pagination-btn { background-color: #374151; color: #d1d5db; font-weight: 500; border: none; padding: 0.5rem 0.75rem; border-radius: 0.375rem; cursor: pointer; transition: all 0.2s; }
+            .pagination-btn:hover:not(:disabled) { background-color: #06b6d4; color: white; }
+            .pagination-btn.active { background-color: #06b6d4; color: white; cursor: default; }
+            .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+            .pagination-ellipsis { color: #9ca3af; padding: 0.5rem 0.25rem; }
+        `;
+        document.head.appendChild(style);
     }
 }
