@@ -140,11 +140,19 @@ export function renderTable(data) {
     dom.resultsTable.append(thead, tbody);
 }
 
+// ▼▼▼ 【需求修改處】 ▼▼▼
 export function renderSubTable(title, records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `<div class="mb-4"><h3 class="text-lg font-semibold text-cyan-400 mb-2">${title}</h3><p class="text-sm text-gray-500">無資料</p></div>`;
     }
-    const headers = Object.keys(records[0]).filter(h => h !== 'id' && h !== '編號');
+    // 增加過濾條件，移除 '土地持分面積', '車位價格', '車位面積'
+    const headers = Object.keys(records[0]).filter(h => 
+        h !== 'id' && 
+        h !== '編號' && 
+        h !== '土地持分面積' && 
+        h !== '車位價格' && 
+        h !== '車位面積'
+    );
     let html = `<div><h3 class="text-lg font-semibold text-cyan-400 mb-2">${title}</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead><tr class="border-b border-gray-600">`;
     headers.forEach(header => { html += `<th class="py-2 pr-2 font-medium text-gray-400">${header}</th>` });
     html += '</tr></thead><tbody>';
@@ -156,6 +164,7 @@ export function renderSubTable(title, records) {
     html += '</tbody></table></div></div>';
     return html;
 }
+// ▲▲▲ 【修改結束】 ▲▲▲
 
 export function renderVelocityTable() {
     if (!state.analysisDataCache || !state.analysisDataCache.salesVelocityAnalysis) return;
