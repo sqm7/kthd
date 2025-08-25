@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQM預售屋數據儀表板ver.3 - 登入</title>
+    <title>平米內參</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
@@ -38,6 +38,7 @@
             const loginForm = document.getElementById('login-form');
             const messageDiv = document.getElementById('message');
             const submitButton = document.getElementById('submit-button');
+            const guestLoginButton = document.getElementById('guest-login-button');
             const buttonLoader = submitButton.querySelector('.loader-sm');
             const buttonText = submitButton.querySelector('span');
 
@@ -63,7 +64,6 @@
                     if (error) throw error;
                     
                     // 登入成功，跳轉到主查詢頁面
-                    // 【GitHub Pages 關鍵】使用相對路徑，假設 index.html 和 login.html 在同一目錄
                     window.location.href = 'index.html';
 
                 } catch (error) {
@@ -76,6 +76,13 @@
                     buttonText.classList.remove('hidden');
                 }
             });
+
+            // 新增訪客登入按鈕的事件監聽
+            guestLoginButton.addEventListener('click', () => {
+                // 訪客直接跳轉，此處可以設定一個模擬的 session 或直接進入
+                // 為了簡單起見，我們直接跳轉
+                window.location.href = 'index.html';
+            });
         });
     </script>
 </head>
@@ -83,8 +90,8 @@
 
     <div class="bg-dark-card p-8 rounded-xl shadow-lg w-full max-w-sm">
         <header class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-white tracking-tight">SQM預售屋數據儀表板</h1>
-            <p class="mt-2 text-md text-gray-400">請使用您的帳號密碼登入</p>
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">平米內參</h1>
+            <p class="mt-2 text-md text-gray-400">預售屋數據儀表板</p>
         </header>
 
         <form id="login-form" class="space-y-6">
@@ -100,10 +107,13 @@
 
             <div id="message" class="text-red-400 text-center min-h-[1.25rem]"></div>
 
-            <div>
+            <div class="space-y-4">
                 <button type="submit" id="submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <div class="loader-sm hidden"></div>
                     <span>登入</span>
+                </button>
+                <button type="button" id="guest-login-button" class="w-full flex justify-center items-center bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
+                    訪客登入
                 </button>
             </div>
         </form>
