@@ -6,9 +6,9 @@
     <title>平米內參 預售屋數據儀表板 - 登入/註冊</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <script type="module" src="./js/supabase-client.js"></script>
     <style>
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #1a1d29; }
+        .bg-dark-card { background-color: #252836; }
         .form-input { background-color: #1f2937; border: 1px solid #4b5563; color: #d1d5db; }
         .form-input:focus { border-color: #06b6d4; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5); outline: none; }
         .loader-sm { border: 2px solid #374151; border-top: 2px solid #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
@@ -21,6 +21,8 @@
             border-bottom: 2px solid transparent;
             color: #9ca3af;
             transition: all 0.2s ease-in-out;
+            flex-grow: 1;
+            text-align: center;
         }
         .tab-button.active {
             color: #06b6d4;
@@ -55,7 +57,7 @@
             </div>
             <div id="login-message" class="text-red-400 text-center min-h-[1.25rem]"></div>
             <div>
-                <button type="submit" id="login-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" id="login-submit-button" class="w-full flex justify-center items-center bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <div class="loader-sm hidden"></div>
                     <span>登入</span>
                 </button>
@@ -73,7 +75,7 @@
             </div>
             <div id="signup-message" class="text-center min-h-[1.25rem]"></div>
             <div>
-                <button type="submit" id="signup-submit-button" class="w-full flex justify-center items-center bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" id="signup-submit-button" class="w-full flex justify-center items-center bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <div class="loader-sm hidden"></div>
                     <span>註冊新帳號</span>
                 </button>
@@ -156,8 +158,8 @@
                 setButtonLoading(loginSubmitBtn, true);
                 loginMessage.textContent = '';
                 
-                const email = e.target.email.value;
-                const password = e.target.password.value;
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
 
                 try {
                     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -177,8 +179,8 @@
                 setButtonLoading(signupSubmitBtn, true);
                 signupMessage.textContent = '';
 
-                const email = e.target.email.value;
-                const password = e.target.password.value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
 
                 try {
                     const { data, error } = await supabase.auth.signUp({ email, password });
