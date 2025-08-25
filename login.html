@@ -96,10 +96,8 @@
     </footer>
 
     <script type="module">
-        // **修正點 1: 直接從 supabase-js 模組中解構出 createClient**
         const { createClient } = supabase;
 
-        // **修正點 2: 將 Supabase 初始化程式碼直接放入**
         const SUPABASE_URL = 'https://zxbmbbfrzbtuueysicoc.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4Ym1iYmZyemJ0dXVleXNpY29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODg5ODksImV4cCI6MjA2NjI2NDk4OX0.1IUynv5eK1xF_3pb-oasqaTrPvbeAOC4Sc1oykPBy4M';
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -155,7 +153,6 @@
                 const password = document.getElementById('login-password').value;
 
                 try {
-                    // **修正點 3: 使用本地初始化好的 supabaseClient**
                     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                     if (error) throw error;
                     window.location.href = 'index.html';
@@ -176,7 +173,6 @@
                 const password = document.getElementById('signup-password').value;
 
                 try {
-                    // **修正點 3: 使用本地初始化好的 supabaseClient**
                     const { data, error } = await supabaseClient.auth.signUp({ email, password });
                     if (error) throw error;
 
