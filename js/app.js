@@ -24,7 +24,7 @@ import {
     handlePriceBandRoomFilterClick,
     handleVelocityRoomFilterClick,
     handleVelocitySubTabClick,
-    handleHeatmapMetricToggle, // 引入新的事件處理函式
+    handleHeatmapMetricToggle,
     handlePriceGridProjectFilterClick,
     analyzeHeatmap,
     handleBackToGrid,
@@ -39,9 +39,10 @@ import * as reportRenderer from './modules/renderers/reports.js';
 import * as chartRenderer from './modules/renderers/charts.js';
 
 function initialize() {
-    api.checkAuth().catch(err => {
-        console.error("認證檢查失敗:", err);
-    });
+    // 【核心修正】: 移除下面這一行程式碼，以避免登入後立刻被跳轉
+    // api.checkAuth().catch(err => {
+    //     console.error("認證檢查失敗:", err);
+    // });
 
     try {
         const countyNames = Object.keys(districtData);
@@ -56,7 +57,12 @@ function initialize() {
     
     dom.rankingPaginationControls.id = 'ranking-pagination-controls';
     dom.rankingPaginationControls.className = 'flex justify-between items-center mt-4 text-sm text-gray-400';
-    dom.rankingReportContent.querySelector('.overflow-x-auto').insertAdjacentElement('afterend', dom.rankingPaginationControls);
+    if(dom.rankingReportContent) { // 確保元素存在
+        const rankingContainer = dom.rankingReportContent.querySelector('.overflow-x-auto');
+        if (rankingContainer) {
+            rankingContainer.insertAdjacentElement('afterend', dom.rankingPaginationControls);
+        }
+    }
 
     // --- 主要按鈕與篩選器事件 ---
     dom.searchBtn.addEventListener('click', () => { state.currentPage = 1; mainFetchData(); });
@@ -131,9 +137,7 @@ function initialize() {
     dom.backToGridBtn.addEventListener('click', handleBackToGrid);
     dom.heatmapLegendContainer.addEventListener('click', handleLegendClick);
     
-    // ▼▼▼ 【新增處】綁定新的事件監聽器 ▼▼▼
     dom.heatmapMetricToggle.addEventListener('click', handleHeatmapMetricToggle);
-    // ▲▲▲ 【新增結束】 ▲▲▲
 
     // 熱力圖面積級距控制
     dom.heatmapIntervalInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
@@ -145,7 +149,7 @@ function initialize() {
         const max = parseFloat(input.max) || 10;
         let newValue = (parseFloat(input.value) || 0) + step;
         if (newValue > max) newValue = max;
-        input.value = newValue;
+        input.value = newValue.toString();
         chartRenderer.renderAreaHeatmap();
     });
     dom.heatmapIntervalDecrementBtn.addEventListener('click', () => {
@@ -154,7 +158,7 @@ function initialize() {
         const min = parseFloat(input.min) || 1;
         let newValue = (parseFloat(input.value) || 0) - step;
         if (newValue < min) newValue = min;
-        input.value = newValue;
+        input.value = newValue.toString();
         chartRenderer.renderAreaHeatmap();
     });
 
