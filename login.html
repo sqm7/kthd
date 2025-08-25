@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>平米內參 預售屋數據儀表板 - 登入</title>
+    <title>平米內參 預售屋數據儀表板 - 登入 / 註冊</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
-        // 複製您主頁面的 Tailwind 設定，以確保顏色一致
         tailwind.config = {
             theme: {
                 extend: {
@@ -26,6 +25,19 @@
         .form-input:focus { border-color: #06b6d4; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5); outline: none; }
         .loader-sm { border: 2px solid #374151; border-top: 2px solid #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 頁籤樣式 */
+        .tab-button {
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #9ca3af;
+            width: 50%;
+        }
+        .tab-button.active {
+            color: #06b6d4;
+            border-bottom-color: #06b6d4;
+        }
     </style>
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -35,78 +47,155 @@
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         document.addEventListener('DOMContentLoaded', () => {
+            // DOM 元素
             const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
             const messageDiv = document.getElementById('message');
-            const submitButton = document.getElementById('submit-button');
-            const buttonLoader = submitButton.querySelector('.loader-sm');
-            const buttonText = submitButton.querySelector('span');
+            const loginSubmitBtn = document.getElementById('login-submit-button');
+            const registerSubmitBtn = document.getElementById('register-submit-button');
 
+            // 頁籤切換邏輯
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                messageDiv.textContent = '';
+            });
+
+            registerTab.addEventListener('click', () => {
+                registerTab.classList.add('active');
+                loginTab.classList.remove('active');
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                messageDiv.textContent = '';
+            });
+
+            // 登入表單提交
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const btn = loginSubmitBtn;
+                const loader = btn.querySelector('.loader-sm');
+                const text = btn.querySelector('span');
                 
-                // 禁用按鈕並顯示載入動畫
-                submitButton.disabled = true;
-                buttonLoader.classList.remove('hidden');
-                buttonText.classList.add('hidden');
+                btn.disabled = true;
+                loader.classList.remove('hidden');
+                text.classList.add('hidden');
                 messageDiv.textContent = '';
                 
                 const email = e.target.email.value;
                 const password = e.target.password.value;
 
                 try {
-                    // 使用帳號密碼登入
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password,
-                    });
-
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
                     if (error) throw error;
-                    
-                    // 登入成功，跳轉到主查詢頁面
                     window.location.href = 'index.html';
-
                 } catch (error) {
-                    console.error('登入失敗:', error);
                     messageDiv.textContent = `登入失敗: ${error.message}`;
-                    
-                    // 恢復按鈕狀態
-                    submitButton.disabled = false;
-                    buttonLoader.classList.add('hidden');
-                    buttonText.classList.remove('hidden');
+                    btn.disabled = false;
+                    loader.classList.add('hidden');
+                    text.classList.remove('hidden');
+                }
+            });
+
+            // 註冊表單提交
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = registerSubmitBtn;
+                const loader = btn.querySelector('.loader-sm');
+                const text = btn.querySelector('span');
+
+                btn.disabled = true;
+                loader.classList.remove('hidden');
+                text.classList.add('hidden');
+                messageDiv.textContent = '';
+
+                const email = e.target['register-email'].value;
+                const password = e.target['register-password'].value;
+                const confirmPassword = e.target['confirm-password'].value;
+
+                if (password !== confirmPassword) {
+                    messageDiv.textContent = '兩次輸入的密碼不相符。';
+                    btn.disabled = false;
+                    loader.classList.add('hidden');
+                    text.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const { error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    messageDiv.innerHTML = '<span class="text-green-400">註冊成功！<br>請至您的電子信箱收取驗證信。</span>';
+                    // 註冊成功後不清空表單，讓使用者看到成功訊息
+                } catch (error) {
+                    messageDiv.textContent = `註冊失敗: ${error.message}`;
+                    btn.disabled = false;
+                    loader.classList.add('hidden');
+                    text.classList.remove('hidden');
                 }
             });
         });
     </script>
 </head>
-<body class="bg-dark-bg text-gray-200 flex items-center justify-center min-h-screen p-4">
+<body class="bg-dark-bg text-gray-200 flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="bg-dark-card p-8 rounded-xl shadow-lg w-full max-w-sm">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-extrabold text-white tracking-tight leading-tight">平米內參<br><span class="text-3xl font-bold">預售屋數據儀表板</span></h1>
-            <p class="mt-4 text-md text-gray-400">請使用您的帳號密碼登入</p>
-        </header>
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-white tracking-tight leading-tight">平米內參<br><span class="text-3xl font-bold">預售屋數據儀表板</span></h1>
+    </header>
 
-        <form id="login-form" class="space-y-6">
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
-                <input type="email" id="email" name="email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
-            </div>
-            
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">密碼</label>
-                <input type="password" id="password" name="password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="current-password">
-            </div>
+    <main class="bg-dark-card p-8 rounded-xl shadow-lg w-full max-w-sm">
+        
+        <div class="flex border-b border-gray-700 mb-6">
+            <button id="login-tab" class="tab-button active">登入</button>
+            <button id="register-tab" class="tab-button">註冊</button>
+        </div>
 
-            <div id="message" class="text-red-400 text-center min-h-[1.25rem]"></div>
-
-            <div>
-                <button type="submit" id="submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    <div class="loader-sm hidden"></div>
-                    <span>登入</span>
-                </button>
+        <form id="login-form">
+            <div class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
+                    <input type="email" id="email" name="email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">密碼</label>
+                    <input type="password" id="password" name="password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="current-password">
+                </div>
+                <div>
+                    <button type="submit" id="login-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div class="loader-sm hidden"></div>
+                        <span>登入</span>
+                    </button>
+                </div>
             </div>
         </form>
-    </div>
 
+        <form id="register-form" class="hidden">
+            <div class="space-y-6">
+                <div>
+                    <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
+                    <input type="email" id="register-email" name="register-email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
+                </div>
+                <div>
+                    <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">密碼 (至少6位數)</label>
+                    <input type="password" id="register-password" name="register-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required minlength="6">
+                </div>
+                <div>
+                    <label for="confirm-password" class="block text-sm font-medium text-gray-300 mb-2">確認密碼</label>
+                    <input type="password" id="confirm-password" name="confirm-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required minlength="6">
+                </div>
+                <div>
+                    <button type="submit" id="register-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <div class="loader-sm hidden"></div>
+                        <span>註冊</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <div id="message" class="text-red-400 text-center min-h-[2.5rem] mt-4"></div>
+
+    </main>
 </body>
 </html>
