@@ -1,6 +1,6 @@
 // js/app.js (最終修正版，適配所有拆分後的模組)
 
-import { districtData } from './modules/config.js';
+import { districtData, supabase } from './modules/config.js'; // **** 確保引入 supabase client ****
 import * as api from './modules/api.js';
 import { dom } from './modules/dom.js';
 import * as ui from './modules/ui.js';
@@ -38,12 +38,29 @@ import { state } from './modules/state.js';
 import * as reportRenderer from './modules/renderers/reports.js';
 import * as chartRenderer from './modules/renderers/charts.js';
 
-function initialize() {
-    // 【核心修正】: 移除下面這一行程式碼，以避免登入後立刻被跳轉
-    // api.checkAuth().catch(err => {
-    //     console.error("認證檢查失敗:", err);
-    // });
+// 【核心修正】: 頁面一載入，就開始監聽認證狀態的變化
+supabase.auth.onAuthStateChange(async (event, session) => {
+    // `session` 物件包含了使用者的登入資訊。如果它存在，代表使用者已登入。
+    if (session) {
+        console.log('認證狀態改變: 已登入', { event, session });
+        // 只有在確認使用者登入後，才執行主應用的初始化
+        // 檢查 `initializeAppUI.hasRun` 確保不會因為 token 刷新等事件重複執行
+        if (!initializeAppUI.hasRun) {
+            initializeAppUI();
+            initializeAppUI.hasRun = true; // 標記為已執行
+        }
+    } else {
+        // 如果 `session` 是 null，代表使用者未登入或已登出
+        console.log('認證狀態改變: 未登入', { event });
+        // 立刻將使用者導向登入頁面
+        window.location.href = 'login.html';
+    }
+});
 
+
+// 將原本的 UI 初始化和事件綁定邏輯抽離成一個獨立函式
+function initializeAppUI() {
+    console.log('執行應用程式初始化...');
     try {
         const countyNames = Object.keys(districtData);
         countyNames.forEach(name => {
@@ -57,7 +74,7 @@ function initialize() {
     
     dom.rankingPaginationControls.id = 'ranking-pagination-controls';
     dom.rankingPaginationControls.className = 'flex justify-between items-center mt-4 text-sm text-gray-400';
-    if(dom.rankingReportContent) { // 確保元素存在
+    if(dom.rankingReportContent) {
         const rankingContainer = dom.rankingReportContent.querySelector('.overflow-x-auto');
         if (rankingContainer) {
             rankingContainer.insertAdjacentElement('afterend', dom.rankingPaginationControls);
@@ -182,4 +199,5 @@ function initialize() {
     updateDistrictOptions();
 }
 
-initialize();
+// 為了防止重複執行，給函式加上一個靜態屬性來追蹤狀態
+initializeAppUI.hasRun = false;
