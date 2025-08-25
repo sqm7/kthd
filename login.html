@@ -126,7 +126,13 @@
                 }
 
                 try {
-                    const { error } = await supabase.auth.signUp({ email, password });
+                    const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+        emailRedirectTo: 'https://sqm7.github.io/kthd/supabase_project/' // 請確認這是您網站能正確訪問的網址
+    }
+});
                     if (error) throw error;
                     messageDiv.innerHTML = '<span class="text-green-400">註冊成功！<br>請至您的電子信箱收取驗證信。</span>';
                     // 註冊成功後不清空表單，讓使用者看到成功訊息
