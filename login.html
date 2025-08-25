@@ -1,194 +1,185 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>平米內參 預售屋數據儀表板 - 登入/註冊</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <script src="https://esm.sh/@supabase/supabase-js@2" type="module"></script>
+// js/app.js (最終修正版，適配所有拆分後的模組)
 
-    <style>
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #1a1d29; }
-        .bg-dark-card { background-color: #252836; }
-        .form-input { background-color: #1f2937; border: 1px solid #4b5563; color: #d1d5db; }
-        .form-input:focus { border-color: #06b6d4; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5); outline: none; }
-        .loader-sm { border: 2px solid #374151; border-top: 2px solid #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .tab-button {
-            padding: 0.75rem 1rem; cursor: pointer; border-bottom: 2px solid transparent;
-            color: #9ca3af; transition: all 0.2s ease-in-out; flex-grow: 1; text-align: center;
-        }
-        .tab-button.active { color: #06b6d4; border-bottom-color: #06b6d4; font-weight: 600; }
-    </style>
-</head>
-<body class="bg-dark-bg text-gray-200 flex flex-col items-center justify-center min-h-screen p-4">
+import { districtData } from './modules/config.js';
+import * as api from './modules/api.js';
+import { dom } from './modules/dom.js';
+import * as ui from './modules/ui.js';
+import { 
+    mainFetchData, 
+    mainAnalyzeData, 
+    mainShowSubTableDetails, 
+    updateDistrictOptions, 
+    toggleAnalyzeButtonState, 
+    handleDateRangeChange,
+    onDistrictContainerClick,
+    onDistrictSuggestionClick,
+    clearSelectedDistricts,
+    onProjectInputFocus,
+    onProjectInput,
+    onSuggestionClick,
+    removeProject,
+    clearSelectedProjects,
+    handleGlobalClick,
+    switchAverageType,
+    handlePriceBandRoomFilterClick,
+    handleVelocityRoomFilterClick,
+    handleVelocitySubTabClick,
+    handleHeatmapMetricToggle,
+    handlePriceGridProjectFilterClick,
+    analyzeHeatmap,
+    handleBackToGrid,
+    handleLegendClick,
+    handleShareClick,
+    copyShareUrl
+} from './modules/eventHandlers.js';
+import { state } from './modules/state.js';
 
-    <div class="bg-dark-card p-8 rounded-xl shadow-lg w-full max-w-sm">
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-extrabold text-white tracking-tight">平米內參</h1>
-            <p class="mt-2 text-md text-gray-400">預售屋數據儀表板</p>
-        </header>
+// 引入拆分後的渲染模組
+import * as reportRenderer from './modules/renderers/reports.js';
+import * as chartRenderer from './modules/renderers/charts.js';
 
-        <div class="mb-6 border-b border-gray-700">
-            <nav class="flex -mb-px">
-                <button id="login-tab" class="tab-button active" data-tab="login">登入</button>
-                <button id="signup-tab" class="tab-button" data-tab="signup">註冊</button>
-            </nav>
-        </div>
+function initialize() {
+    // 【核心修正】: 移除下面這一行程式碼
+    // api.checkAuth().catch(err => {
+    //     console.error("認證檢查失敗:", err);
+    // });
 
-        <form id="login-form" class="space-y-6">
-            <div>
-                <label for="login-email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
-                <input type="email" id="login-email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
-            </div>
-            <div>
-                <label for="login-password" class="block text-sm font-medium text-gray-300 mb-2">密碼</label>
-                <input type="password" id="login-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="current-password">
-            </div>
-            <div id="login-message" class="text-red-400 text-center min-h-[1.25rem]"></div>
-            <div>
-                <button type="submit" id="login-submit-button" class="w-full flex justify-center items-center bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    <div class="loader-sm hidden"></div>
-                    <span>登入</span>
-                </button>
-            </div>
-        </form>
-        
-        <form id="signup-form" class="space-y-6 hidden">
-            <div>
-                <label for="signup-email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
-                <input type="email" id="signup-email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
-            </div>
-            <div>
-                <label for="signup-password" class="block text-sm font-medium text-gray-300 mb-2">設定密碼</label>
-                <input type="password" id="signup-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="new-password">
-            </div>
-            <div id="signup-message" class="text-center min-h-[1.25rem]"></div>
-            <div>
-                <button type="submit" id="signup-submit-button" class="w-full flex justify-center items-center bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    <div class="loader-sm hidden"></div>
-                    <span>註冊新帳號</span>
-                </button>
-            </div>
-        </form>
-    </div>
-    
-    <footer class="text-center py-8 mt-12 text-gray-500 text-sm">
-        <div class="flex items-center justify-center space-x-4 md:space-x-6 flex-wrap gap-y-2">
-            <a href="mailto:sqmtalk7@gmail.com" class="hover:text-cyan-400 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="height: 1.2em; width: 1.2em;">
-                  <path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z" /><path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z" />
-                </svg>
-                <span>sqmtalk7@gmail.com</span>
-            </a>
-            <a href="https://www.threads.net/@sqm.talk" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512" fill="currentColor">
-                    <path d="M336.5 80.4c0-2.3-1.9-4.2-4.2-4.2h-39.3c-13.4 0-26.1 5.3-35.4 14.6L122.9 225.1 63.5 165.7c-9.3-9.3-22-14.6-35.4-14.6H13.5c-2.3 0-4.2 1.9-4.2 4.2v39.3c0 13.4 5.3 26.1 14.6 35.4l84.6 84.6c1.1 1.1 2.3 2.1 3.6 3.1l-84.6 84.6c-9.3 9.3-14.6 22-14.6 35.4v39.3c0 2.3 1.9 4.2 4.2 4.2h39.3c13.4 0 26.1-5.3 35.4-14.6l59.4-59.4 134.5 134.5c9.3 9.3 22 14.6 35.4 14.6h39.3c2.3 0 4.2-1.9 4.2-4.2V323.8c0-13.4-5.3-26.1-14.6-35.4l-84.6-84.6c-1.1-1.1-2.3-2.1-3.6-3.1l84.6-84.6c9.3-9.3 14.6-22 14.6-35.4V80.4zm-62.3-15L238.6 101c-3.1 3.1-3.1 8.2 0 11.3l84.6 84.6c3.1 3.1 8.2 3.1 11.3 0l35.4-35.4c3.1-3.1 3.1-8.2 0-11.3L334.2 84.2c-3.1-3.1-8.2-3.1-11.3 0L274.2 65.4zM122.9 286.9L38.3 431.5c-3.1 3.1-8.2 3.1-11.3 0L.3 404.9c-3.1-3.1-3.1-8.2 0-11.3L84.9 309c3.1-3.1 8.2-3.1 11.3 0l26.7 26.7c3.1 3.1 3.1 8.2 0 11.3zm212.3 15.7l-35.4 35.4c-3.1 3.1-8.2 3.1-11.3 0L153.9 203.3c-3.1-3.1-3.1-8.2 0-11.3l35.4-35.4c3.1-3.1 8.2-3.1 11.3 0l134.5 134.5c3.1 3.1 3.1 8.2 0 11.3z"/>
-                </svg>
-                <span>@sqm.talk</span>
-            </a>
-        </div>
-        <p class="mt-4">資料來源：內政部實價登錄</p>
-        <p class="mt-2">版權所有 © 2025 平米內參. 保留一切權利.</p>
-    </footer>
-
-    <script type="module">
-        const { createClient } = supabase;
-
-        const SUPABASE_URL = 'https://zxbmbbfrzbtuueysicoc.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4Ym1iYmZyemJ0dXVleXNpY29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODg5ODksImV4cCI6MjA2NjI2NDk4OX0.1IUynv5eK1xF_3pb-oasqaTrPvbeAOC4Sc1oykPBy4M';
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('login-form');
-            const signupForm = document.getElementById('signup-form');
-            const loginTab = document.getElementById('login-tab');
-            const signupTab = document.getElementById('signup-tab');
-            
-            const loginMessage = document.getElementById('login-message');
-            const signupMessage = document.getElementById('signup-message');
-
-            const loginSubmitBtn = document.getElementById('login-submit-button');
-            const signupSubmitBtn = document.getElementById('signup-submit-button');
-            
-            const switchTab = (tab) => {
-                if (tab === 'login') {
-                    loginTab.classList.add('active');
-                    signupTab.classList.remove('active');
-                    loginForm.classList.remove('hidden');
-                    signupForm.classList.add('hidden');
-                } else {
-                    signupTab.classList.add('active');
-                    loginTab.classList.remove('active');
-                    signupForm.classList.remove('hidden');
-                    loginForm.classList.add('hidden');
-                }
-            };
-            
-            loginTab.addEventListener('click', () => switchTab('login'));
-            signupTab.addEventListener('click', () => switchTab('signup'));
-
-            const setButtonLoading = (button, isLoading) => {
-                const loader = button.querySelector('.loader-sm');
-                const text = button.querySelector('span');
-                button.disabled = isLoading;
-                if (isLoading) {
-                    loader.classList.remove('hidden');
-                    text.classList.add('hidden');
-                } else {
-                    loader.classList.add('hidden');
-                    text.classList.remove('hidden');
-                }
-            };
-
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                setButtonLoading(loginSubmitBtn, true);
-                loginMessage.textContent = '';
-                
-                const email = document.getElementById('login-email').value;
-                const password = document.getElementById('login-password').value;
-
-                try {
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    window.location.href = 'index.html';
-                } catch (error) {
-                    console.error('登入失敗:', error);
-                    loginMessage.textContent = `登入失敗: ${error.message}`;
-                } finally {
-                    setButtonLoading(loginSubmitBtn, false);
-                }
-            });
-
-            signupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                setButtonLoading(signupSubmitBtn, true);
-                signupMessage.textContent = '';
-
-                const email = document.getElementById('signup-email').value;
-                const password = document.getElementById('signup-password').value;
-
-                try {
-                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
-                    if (error) throw error;
-
-                    signupMessage.textContent = '註冊成功！請檢查您的信箱並點擊驗證連結以啟用帳號。';
-                    signupMessage.classList.add('text-green-400');
-                    signupMessage.classList.remove('text-red-400');
-                } catch (error) {
-                    console.error('註冊失敗:', error);
-                    signupMessage.textContent = `註冊失敗: ${error.message}`;
-                    signupMessage.classList.add('text-red-400');
-                    signupMessage.classList.remove('text-green-400');
-                } finally {
-                    setButtonLoading(signupSubmitBtn, false);
-                }
-            });
+    try {
+        const countyNames = Object.keys(districtData);
+        countyNames.forEach(name => {
+            dom.countySelect.add(new Option(name, name));
         });
-    </script>
-</body>
-</html>
+    } catch (error) {
+        console.error("填入縣市資料時發生錯誤:", error);
+        ui.showMessage("系統初始化失敗：載入縣市資料時出錯。", true);
+        return;
+    }
+    
+    dom.rankingPaginationControls.id = 'ranking-pagination-controls';
+    dom.rankingPaginationControls.className = 'flex justify-between items-center mt-4 text-sm text-gray-400';
+    if(dom.rankingReportContent) { // 確保元素存在
+        const rankingContainer = dom.rankingReportContent.querySelector('.overflow-x-auto');
+        if (rankingContainer) {
+            rankingContainer.insertAdjacentElement('afterend', dom.rankingPaginationControls);
+        }
+    }
+
+    // --- 主要按鈕與篩選器事件 ---
+    dom.searchBtn.addEventListener('click', () => { state.currentPage = 1; mainFetchData(); });
+    dom.analyzeBtn.addEventListener('click', mainAnalyzeData);
+    dom.countySelect.addEventListener('change', updateDistrictOptions);
+    dom.typeSelect.addEventListener('change', toggleAnalyzeButtonState);
+    
+    // --- 日期相關事件 ---
+    dom.dateRangeSelect.addEventListener('change', handleDateRangeChange);
+    dom.dateStartInput.addEventListener('input', () => { if (document.activeElement === dom.dateStartInput) dom.dateRangeSelect.value = 'custom'; });
+    dom.dateEndInput.addEventListener('input', () => { if (document.activeElement === dom.dateEndInput) dom.dateRangeSelect.value = 'custom'; });
+    dom.setTodayBtn.addEventListener('click', () => {
+        dom.dateEndInput.value = ui.formatDate(new Date());
+        dom.dateRangeSelect.value = 'custom';
+    });
+
+    // --- 行政區與建案名稱篩選器 (使用事件委派) ---
+    dom.districtContainer.addEventListener('click', onDistrictContainerClick);
+    dom.districtSuggestions.addEventListener('click', onDistrictSuggestionClick);
+    dom.clearDistrictsBtn.addEventListener('click', clearSelectedDistricts);
+
+    dom.projectNameInput.addEventListener('focus', onProjectInputFocus);
+    dom.projectNameInput.addEventListener('input', onProjectInput);
+    dom.projectNameSuggestions.addEventListener('click', onSuggestionClick);
+    dom.projectNameContainer.addEventListener('click', e => { 
+        if (e.target.classList.contains('multi-tag-remove')) removeProject(e.target.dataset.name); 
+    });
+    dom.clearProjectsBtn.addEventListener('click', clearSelectedProjects);
+    
+    // --- 彈出視窗與全域點擊事件 ---
+    dom.modalCloseBtn.addEventListener('click', () => dom.modal.classList.add('hidden'));
+    dom.resultsTable.addEventListener('click', e => { 
+        const detailsBtn = e.target.closest('.details-btn');
+        if (detailsBtn) mainShowSubTableDetails(detailsBtn); 
+    });
+    document.addEventListener('click', handleGlobalClick);
+
+    // --- 報告頁籤與互動元件事件 ---
+    dom.tabsContainer.addEventListener('click', (e) => {
+        if (e.target.matches('.tab-button')) {
+            const tabId = e.target.dataset.tab;
+            ui.switchTab(tabId);
+            if (tabId === 'velocity-report' && state.analysisDataCache) {
+                chartRenderer.renderSalesVelocityChart();
+                chartRenderer.renderAreaHeatmap();
+            }
+        }
+    });
+    dom.rankingTable.addEventListener('click', (e) => {
+        const header = e.target.closest('.sortable-th');
+        if (!header) return;
+        const sortKey = header.dataset.sortKey;
+        if (state.currentSort.key === sortKey) {
+            state.currentSort.order = state.currentSort.order === 'desc' ? 'asc' : 'desc';
+        } else {
+            state.currentSort.key = sortKey;
+            state.currentSort.order = 'desc';
+        }
+        state.rankingCurrentPage = 1;
+        reportRenderer.renderRankingReport();
+    });
+    dom.avgTypeToggle.addEventListener('click', (e) => { 
+        if (e.target.matches('.avg-type-btn')) switchAverageType(e.target.dataset.type); 
+    });
+    
+    // --- 去化分析與垂直水平分析相關事件 ---
+    dom.priceBandRoomFilterContainer.addEventListener('click', handlePriceBandRoomFilterClick);
+    dom.velocityRoomFilterContainer.addEventListener('click', handleVelocityRoomFilterClick);
+    dom.velocitySubTabsContainer.addEventListener('click', handleVelocitySubTabClick);
+    dom.priceGridProjectFilterContainer.addEventListener('click', handlePriceGridProjectFilterClick);
+    dom.analyzeHeatmapBtn.addEventListener('click', analyzeHeatmap);
+    dom.backToGridBtn.addEventListener('click', handleBackToGrid);
+    dom.heatmapLegendContainer.addEventListener('click', handleLegendClick);
+    
+    dom.heatmapMetricToggle.addEventListener('click', handleHeatmapMetricToggle);
+
+    // 熱力圖面積級距控制
+    dom.heatmapIntervalInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
+    dom.heatmapMinAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
+    dom.heatmapMaxAreaInput.addEventListener('change', chartRenderer.renderAreaHeatmap);
+    dom.heatmapIntervalIncrementBtn.addEventListener('click', () => {
+        const input = dom.heatmapIntervalInput;
+        const step = parseFloat(input.step) || 1;
+        const max = parseFloat(input.max) || 10;
+        let newValue = (parseFloat(input.value) || 0) + step;
+        if (newValue > max) newValue = max;
+        input.value = newValue.toString();
+        chartRenderer.renderAreaHeatmap();
+    });
+    dom.heatmapIntervalDecrementBtn.addEventListener('click', () => {
+        const input = dom.heatmapIntervalInput;
+        const step = parseFloat(input.step) || 1;
+        const min = parseFloat(input.min) || 1;
+        let newValue = (parseFloat(input.value) || 0) - step;
+        if (newValue < min) newValue = min;
+        input.value = newValue.toString();
+        chartRenderer.renderAreaHeatmap();
+    });
+
+    // --- 分享功能 ---
+    dom.sharePriceGridBtn.addEventListener('click', () => handleShareClick('price_grid'));
+    dom.shareModalCloseBtn.addEventListener('click', () => dom.shareModal.classList.add('hidden'));
+    dom.copyShareUrlBtn.addEventListener('click', copyShareUrl);
+
+    // --- 處理分頁變更的自訂事件 ---
+    document.addEventListener('pageChange', (e) => {
+        if (e.detail.type === 'main') {
+            mainFetchData();
+        } else if (e.detail.type === 'ranking') {
+            reportRenderer.renderRankingReport();
+        }
+    });
+
+    // --- 初始化應用狀態 ---
+    handleDateRangeChange();
+    toggleAnalyzeButtonState();
+    updateDistrictOptions();
+}
+
+initialize();
