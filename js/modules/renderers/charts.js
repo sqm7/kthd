@@ -9,9 +9,9 @@ let salesVelocityChartInstance = null;
 let priceBandChartInstance = null;
 let rankingChartInstance = null;
 
-// ▼▼▼ 【新函式】渲染建案銷售總額排名長條圖 ▼▼▼
+// ▼▼▼ 【已修改】將長條圖替換為樹狀圖 (Treemap) ▼▼▼
 /**
- * 渲染建案銷售總額排名長條圖
+ * 渲染建案銷售總額佔比樹狀圖
  */
 export function renderRankingChart() {
     if (rankingChartInstance) {
@@ -26,14 +26,11 @@ export function renderRankingChart() {
 
     const { projectRanking } = state.analysisDataCache;
 
-    // 依銷售總額排序並取前 15 名
-    const topProjects = [...projectRanking]
-        .sort((a, b) => b.saleAmountSum - a.saleAmountSum)
-        .slice(0, 15)
-        .reverse(); // 反轉順序以在圖表上由上至下顯示最高值
-
-    const seriesData = topProjects.map(p => Math.round(p.saleAmountSum));
-    const categoriesData = topProjects.map(p => p.projectName);
+    // 準備 Treemap 所需的資料格式：{ x: '建案名', y: 銷售總額 }
+    const seriesData = projectRanking.map(p => ({
+        x: p.projectName,
+        y: Math.round(p.saleAmountSum)
+    }));
 
     const options = {
         series: [{
@@ -41,81 +38,56 @@ export function renderRankingChart() {
             data: seriesData
         }],
         chart: {
-            type: 'bar',
-            height: 500,
+            type: 'treemap', // <-- 圖表類型已修改
+            height: 450,
             background: 'transparent',
-            toolbar: { show: true },
-            foreColor: '#e5e7eb'
-        },
-        plotOptions: {
-            bar: {
-                horizontal: true,
-                borderRadius: 4,
-                barHeight: '70%',
-            }
-        },
-        dataLabels: {
-            enabled: false,
-        },
-        xaxis: {
-            categories: categoriesData,
-            title: {
-                text: '銷售總額 (萬)',
-                style: {
-                    color: '#9ca3af'
+            toolbar: { 
+                show: true,
+                tools: {
+                    download: true,
+                    selection: false,
+                    zoom: false,
+                    zoomin: false,
+                    zoomout: false,
+                    pan: false,
+                    reset: false
                 }
             },
-            labels: {
-                formatter: function(val) {
-                    return val.toLocaleString();
-                },
-                style: {
-                    colors: '#9ca3af'
-                }
-            }
-        },
-        yaxis: {
-            labels: {
-                style: {
-                    colors: '#e5e7eb',
-                    fontSize: '13px'
-                },
-                maxWidth: 250
-            }
+            foreColor: '#e5e7eb'
         },
         title: {
-            text: 'Top 15 建案銷售總額排名',
+            text: '建案銷售總額佔比 (Treemap)',
             align: 'center',
             style: {
                 fontSize: '16px',
                 color: '#e5e7eb'
             }
         },
-        tooltip: {
-            theme: 'dark',
-            x: {
-                formatter: function(value) {
-                    return `${value.toLocaleString()} 萬`;
-                }
-            },
-            y: {
-                title: {
-                    formatter: function () {
-                        return '建案名稱'
-                    }
+        plotOptions: {
+            treemap: {
+                distributed: true, // 讓每個方塊都有不同顏色
+                enableShades: true, // 啟用顏色深淺變化
+                colorScale: {
+                    // 顏色範圍：從淺紫到深紫
+                    ranges: [
+                        { from: 0, to: 100000, color: '#a78bfa' },
+                        { from: 100001, to: 500000, color: '#8b5cf6' },
+                        { from: 500001, to: 1000000, color: '#7c3aed' },
+                        { from: 1000001, to: Infinity, color: '#6d28d9' }
+                    ]
                 }
             }
         },
-        grid: {
-            borderColor: '#374151',
-            xaxis: {
-                lines: {
-                    show: true
-                }
-            },
-            yaxis: {
-                lines: {
-                    show: false
+        tooltip: {
+            theme: 'dark',
+            y: {
+                formatter: function(value) {
+                    return `${value.toLocaleString()} 萬`;
+                },
+                title: {
+                    formatter: function(seriesName) {
+                        return seriesName + ':';
+                    }
                 }
             }
         },
@@ -123,17 +95,12 @@ export function renderRankingChart() {
             text: '無資料可顯示'
         }
     };
-    
-    const finalOptions = {
-        ...options,
-        xaxis: options.yaxis,
-        yaxis: options.xaxis,
-    };
 
-    rankingChartInstance = new ApexCharts(dom.rankingChartContainer, finalOptions);
+    rankingChartInstance = new ApexCharts(dom.rankingChartContainer, options);
     rankingChartInstance.render();
 }
-// ▲▲▲ 【新函式結束】 ▲▲▲
+// ▲▲▲ 【修改結束】 ▲▲▲
+
 
 /**
  * 渲染總價帶分佈箱型圖
