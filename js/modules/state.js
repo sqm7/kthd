@@ -23,9 +23,10 @@ export const state = {
     isHeatmapActive: false,
     currentLegendFilter: { type: null, value: null },
     areaHeatmapChart: null,
+    lastHeatmapDetails: null, 
+    currentHeatmapDetailMetric: 'median',
     // ▼▼▼ 【新增處】 ▼▼▼
-    lastHeatmapDetails: null, // 儲存上次點擊熱力圖的詳細數據
-    currentHeatmapDetailMetric: 'median', // 預設顯示中位數
+    currentTreemapMetric: 'saleAmountSum', // 預設指標為銷售總額
     // ▲▲▲ 【新增結束】 ▲▲▲
 };
 
