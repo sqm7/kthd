@@ -9,11 +9,12 @@ let salesVelocityChartInstance = null;
 let priceBandChartInstance = null;
 let rankingChartInstance = null;
 
-// ▼▼▼ 【已修改】將長條圖替換為樹狀圖 (Treemap) ▼▼▼
+// ▼▼▼ 【已修改】將長條圖替換為樹狀圖 (Treemap) 並增加多指標切換功能 ▼▼▼
 /**
- * 渲染建案銷售總額佔比樹狀圖
+ * 渲染核心指標與排名樹狀圖
+ * @param {string} metric - 要顯示的指標 ('saleAmountSum', 'buildingAreaSum', 'count')
  */
-export function renderRankingChart() {
+export function renderRankingChart(metric = 'saleAmountSum') {
     if (rankingChartInstance) {
         rankingChartInstance.destroy();
         rankingChartInstance = null;
@@ -26,22 +27,43 @@ export function renderRankingChart() {
 
     const { projectRanking } = state.analysisDataCache;
 
-    // 準備 Treemap 所需的資料格式：{ x: '建案名', y: 銷售總額 }
+    // 根據選擇的指標準備資料
     const seriesData = projectRanking.map(p => ({
         x: p.projectName,
-        y: Math.round(p.saleAmountSum)
+        y: Math.round(p[metric])
     }));
+
+    // 計算總和，用於計算百分比
+    const totalValue = seriesData.reduce((sum, item) => sum + item.y, 0);
+
+    // 根據指標選擇標題和格式化工具
+    let chartTitle, valueSuffix;
+    switch (metric) {
+        case 'buildingAreaSum':
+            chartTitle = '建案建物總面積佔比';
+            valueSuffix = ' 坪';
+            break;
+        case 'count':
+            chartTitle = '建案資料筆數佔比';
+            valueSuffix = ' 筆';
+            break;
+        case 'saleAmountSum':
+        default:
+            chartTitle = '建案銷售總額佔比';
+            valueSuffix = ' 萬';
+            break;
+    }
 
     const options = {
         series: [{
-            name: '銷售總額',
+            name: chartTitle,
             data: seriesData
         }],
         chart: {
-            type: 'treemap', // <-- 圖表類型已修改
+            type: 'treemap',
             height: 450,
             background: 'transparent',
-            toolbar: { 
+            toolbar: {
                 show: true,
                 tools: {
                     download: true,
@@ -56,7 +78,7 @@ export function renderRankingChart() {
             foreColor: '#e5e7eb'
         },
         title: {
-            text: '建案銷售總額佔比 (Treemap)',
+            text: chartTitle,
             align: 'center',
             style: {
                 fontSize: '16px',
@@ -65,30 +87,44 @@ export function renderRankingChart() {
         },
         plotOptions: {
             treemap: {
-                distributed: true, // 讓每個方塊都有不同顏色
-                enableShades: true, // 啟用顏色深淺變化
+                distributed: true,
+                enableShades: true,
+                // 符合網站風格的顏色 (青色 -> 紫色)
                 colorScale: {
-                    // 顏色範圍：從淺紫到深紫
                     ranges: [
-                        { from: 0, to: 100000, color: '#a78bfa' },
-                        { from: 100001, to: 500000, color: '#8b5cf6' },
-                        { from: 500001, to: 1000000, color: '#7c3aed' },
-                        { from: 1000001, to: Infinity, color: '#6d28d9' }
+                        { from: 0, to: Math.max(1, totalValue * 0.05), color: '#a5f3fc' },
+                        { from: Math.max(1, totalValue * 0.05) + 0.1, to: totalValue * 0.15, color: '#67e8f9' },
+                        { from: totalValue * 0.15 + 0.1, to: totalValue * 0.3, color: '#22d3ee' },
+                        { from: totalValue * 0.3 + 0.1, to: totalValue * 0.5, color: '#c4b5fd' },
+                        { from: totalValue * 0.5 + 0.1, to: totalValue * 0.75, color: '#a78bfa' },
+                        { from: totalValue * 0.75 + 0.1, to: Infinity, color: '#8b5cf6' }
                     ]
                 }
             }
         },
         tooltip: {
             theme: 'dark',
-            y: {
-                formatter: function(value) {
-                    return `${value.toLocaleString()} 萬`;
-                },
-                title: {
-                    formatter: function(seriesName) {
-                        return seriesName + ':';
-                    }
-                }
+            custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                const value = w.globals.series[seriesIndex][dataPointIndex];
+                const projectName = w.globals.labels[dataPointIndex];
+                const percentage = totalValue > 0 ? ((value / totalValue) * 100).toFixed(2) : 0;
+                
+                return `
+                    <div class="apexcharts-tooltip-title" style="font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
+                        ${projectName}
+                    </div>
+                    <div class="apexcharts-tooltip-series-group apexcharts-active" style="order: 1; display: flex;">
+                        <span class="apexcharts-tooltip-marker" style="background-color: ${w.config.colors[dataPointIndex]};"></span>
+                        <div class="apexcharts-tooltip-text" style="font-family: Helvetica, Arial, sans-serif; font-size: 12px;">
+                            <div class="apexcharts-tooltip-y-group">
+                                <span class="apexcharts-tooltip-text-y-label">${w.globals.seriesNames[seriesIndex]}: </span>
+                                <span class="apexcharts-tooltip-text-y-value">
+                                    ${value.toLocaleString()}${valueSuffix} (${percentage}%)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         },
         noData: {
