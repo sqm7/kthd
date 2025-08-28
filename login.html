@@ -56,7 +56,6 @@
             const messageDiv = document.getElementById('message');
             const loginSubmitBtn = document.getElementById('login-submit-button');
             const registerSubmitBtn = document.getElementById('register-submit-button');
-            let countdownInterval; // 用於存放倒數計時器
 
             // 頁籤切換邏輯
             loginTab.addEventListener('click', () => {
@@ -65,7 +64,6 @@
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
                 messageDiv.textContent = '';
-                if(countdownInterval) clearInterval(countdownInterval); // 如果正在倒數，則停止
             });
 
             registerTab.addEventListener('click', () => {
@@ -103,26 +101,6 @@
                 }
             });
 
-            // ▼▼▼ 【修改處】 ▼▼▼
-            // 倒數計時並返回登入畫面的函式
-            function startCountdownAndRedirect() {
-                let seconds = 10;
-                const countdownSpan = document.getElementById('countdown');
-                
-                if (countdownInterval) clearInterval(countdownInterval); // 清除之前的計時器
-
-                countdownInterval = setInterval(() => {
-                    seconds--;
-                    if (countdownSpan) {
-                        countdownSpan.textContent = seconds;
-                    }
-                    if (seconds <= 0) {
-                        clearInterval(countdownInterval);
-                        loginTab.click(); // 模擬點擊登入頁籤以返回
-                    }
-                }, 1000);
-            }
-
             // 註冊表單提交
             registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -148,26 +126,26 @@
                 }
 
                 try {
-                    const { error } = await supabase.auth.signUp({ email, password });
+                    // ▼▼▼【這就是修改過的地方】▼▼▼
+                    const { error } = await supabase.auth.signUp({
+                        email: email,
+                        password: password,
+                        options: {
+                            emailRedirectTo: 'https://sqm7.github.io/kthd/'
+                        }
+                    });
+                    // ▲▲▲【修改結束】▲▲▲
+
                     if (error) throw error;
-                    
-                    // 顯示成功訊息並啟動倒數
-                    messageDiv.innerHTML = `
-                        <span class="text-green-400">
-                            註冊成功！請至您的電子信箱收取驗證信。<br>
-                            <span id="countdown">10</span> 秒後將返回登入畫面。
-                        </span>`;
-                    startCountdownAndRedirect();
-                    
+                    messageDiv.innerHTML = '<span class="text-green-400">註冊成功！<br>請至您的電子信箱收取驗證信。</span>';
+                    // 註冊成功後不清空表單，讓使用者看到成功訊息
                 } catch (error) {
                     messageDiv.textContent = `註冊失敗: ${error.message}`;
-                    // 只有在失敗時才恢復按鈕功能
                     btn.disabled = false;
                     loader.classList.add('hidden');
                     text.classList.remove('hidden');
                 }
             });
-            // ▲▲▲ 【修改結束】 ▲▲▲
         });
     </script>
 </head>
