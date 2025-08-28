@@ -7,6 +7,133 @@ import { renderHeatmapDetailsTable } from './tables.js';
 // --- 全局圖表實例 ---
 let salesVelocityChartInstance = null;
 let priceBandChartInstance = null;
+let rankingChartInstance = null;
+
+// ▼▼▼ 【新函式】渲染建案銷售總額排名長條圖 ▼▼▼
+/**
+ * 渲染建案銷售總額排名長條圖
+ */
+export function renderRankingChart() {
+    if (rankingChartInstance) {
+        rankingChartInstance.destroy();
+        rankingChartInstance = null;
+    }
+
+    if (!state.analysisDataCache || !state.analysisDataCache.projectRanking || state.analysisDataCache.projectRanking.length === 0) {
+        dom.rankingChartContainer.innerHTML = '<p class="text-gray-500 p-4 text-center">無排名資料可繪製圖表。</p>';
+        return;
+    }
+
+    const { projectRanking } = state.analysisDataCache;
+
+    // 依銷售總額排序並取前 15 名
+    const topProjects = [...projectRanking]
+        .sort((a, b) => b.saleAmountSum - a.saleAmountSum)
+        .slice(0, 15)
+        .reverse(); // 反轉順序以在圖表上由上至下顯示最高值
+
+    const seriesData = topProjects.map(p => Math.round(p.saleAmountSum));
+    const categoriesData = topProjects.map(p => p.projectName);
+
+    const options = {
+        series: [{
+            name: '銷售總額',
+            data: seriesData
+        }],
+        chart: {
+            type: 'bar',
+            height: 500,
+            background: 'transparent',
+            toolbar: { show: true },
+            foreColor: '#e5e7eb'
+        },
+        plotOptions: {
+            bar: {
+                horizontal: true,
+                borderRadius: 4,
+                barHeight: '70%',
+            }
+        },
+        dataLabels: {
+            enabled: false,
+        },
+        xaxis: {
+            categories: categoriesData,
+            title: {
+                text: '銷售總額 (萬)',
+                style: {
+                    color: '#9ca3af'
+                }
+            },
+            labels: {
+                formatter: function(val) {
+                    return val.toLocaleString();
+                },
+                style: {
+                    colors: '#9ca3af'
+                }
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    colors: '#e5e7eb',
+                    fontSize: '13px'
+                },
+                maxWidth: 250
+            }
+        },
+        title: {
+            text: 'Top 15 建案銷售總額排名',
+            align: 'center',
+            style: {
+                fontSize: '16px',
+                color: '#e5e7eb'
+            }
+        },
+        tooltip: {
+            theme: 'dark',
+            x: {
+                formatter: function(value) {
+                    return `${value.toLocaleString()} 萬`;
+                }
+            },
+            y: {
+                title: {
+                    formatter: function () {
+                        return '建案名稱'
+                    }
+                }
+            }
+        },
+        grid: {
+            borderColor: '#374151',
+            xaxis: {
+                lines: {
+                    show: true
+                }
+            },
+            yaxis: {
+                lines: {
+                    show: false
+                }
+            }
+        },
+        noData: {
+            text: '無資料可顯示'
+        }
+    };
+    
+    const finalOptions = {
+        ...options,
+        xaxis: options.yaxis,
+        yaxis: options.xaxis,
+    };
+
+    rankingChartInstance = new ApexCharts(dom.rankingChartContainer, finalOptions);
+    rankingChartInstance.render();
+}
+// ▲▲▲ 【新函式結束】 ▲▲▲
 
 /**
  * 渲染總價帶分佈箱型圖
