@@ -22,6 +22,7 @@ export const dom = {
   rankingReportContent: document.getElementById('ranking-report-content'),
   metricCardsContainer: document.getElementById('metric-cards-container'),
   rankingTable: document.getElementById('ranking-table'),
+  rankingChartContainer: document.getElementById('ranking-chart-container'), // 新增
   rankingPaginationControls: document.createElement('div'),
   priceBandReportContent: document.getElementById('price-band-report-content'),
   priceBandTable: document.getElementById('price-band-table'),
@@ -82,7 +83,5 @@ export const dom = {
   salesVelocityChart: document.getElementById('sales-velocity-chart'),
   heatmapDetailsControls: document.getElementById('heatmap-details-controls'),
   heatmapMetricToggle: document.getElementById('heatmap-metric-toggle'),
-  // ▼▼▼ 【新增處】 ▼▼▼
   heatmapDetailsContent: document.getElementById('heatmap-details-content'),
-  // ▲▲▲ 【新增結束】 ▲▲▲
 };
