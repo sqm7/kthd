@@ -64,6 +64,10 @@
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
                 messageDiv.textContent = '';
+                // 清除可能正在進行的倒數計時
+                if (window.registerCountdownInterval) {
+                    clearInterval(window.registerCountdownInterval);
+                }
             });
 
             registerTab.addEventListener('click', () => {
@@ -126,7 +130,6 @@
                 }
 
                 try {
-                    // ▼▼▼【這就是修改過的地方】▼▼▼
                     const { error } = await supabase.auth.signUp({
                         email: email,
                         password: password,
@@ -134,11 +137,28 @@
                             emailRedirectTo: 'https://sqm7.github.io/kthd/'
                         }
                     });
-                    // ▲▲▲【修改結束】▲▲▲
 
                     if (error) throw error;
-                    messageDiv.innerHTML = '<span class="text-green-400">註冊成功！<br>請至您的電子信箱收取驗證信。</span>';
-                    // 註冊成功後不清空表單，讓使用者看到成功訊息
+                    
+                    // ▼▼▼【新增功能：倒數計時並切換回登入頁】▼▼▼
+                    let countdown = 10;
+                    const successMessage = '註冊成功！請至您的電子信箱收取驗證信。';
+                    
+                    messageDiv.innerHTML = `<span class="text-green-400">${successMessage}<br>${countdown} 秒後將返回登入頁面...</span>`;
+
+                    // 將 interval 存儲在 window 物件上，以便在切換頁籤時可以清除它
+                    window.registerCountdownInterval = setInterval(() => {
+                        countdown--;
+                        if (countdown > 0) {
+                            messageDiv.innerHTML = `<span class="text-green-400">${successMessage}<br>${countdown} 秒後將返回登入頁面...</span>`;
+                        } else {
+                            clearInterval(window.registerCountdownInterval);
+                            // 模擬點擊登入頁籤來切換畫面
+                            loginTab.click();
+                        }
+                    }, 1000);
+                    // ▲▲▲【新增結束】▲▲▲
+
                 } catch (error) {
                     messageDiv.textContent = `註冊失敗: ${error.message}`;
                     btn.disabled = false;
