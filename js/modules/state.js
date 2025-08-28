@@ -1,4 +1,4 @@
-// js/modules/state.js
+// js/modules/state.js 
 
 import { dom } from './dom.js';
 import { countyCodeMap } from './config.js';
