@@ -47,12 +47,12 @@
         <div id="district-filter-wrapper">
             <div class="flex justify-between items-center">
                 <label for="district-input-area" class="block text-sm font-medium text-gray-300">行政區 (可複選)</label>
-     <button id="clear-districts-btn" class="text-xs text-cyan-400 hover:text-cyan-300 hidden transition-opacity">清除選取</button>
+   <button id="clear-districts-btn" class="text-xs text-cyan-400 hover:text-cyan-300 hidden transition-opacity">清除選取</button>
             </div>
             <div class="relative mt-1">
                 <div id="district-container" class="form-multiselect flex flex-nowrap items-center gap-2 p-1 min-h-[42px] rounded-md overflow-x-auto disabled">
                     <div id="district-input-area" class="text-gray-400/80 flex-grow py-1 px-2 cursor-pointer">請先選縣市...</div>
-         </div>
+       </div>
                 <div id="district-suggestions" class="absolute z-50 w-full mt-1 bg-dark-card border border-gray-600 rounded-md shadow-lg hidden suggestions-container"></div>
             </div>
         </div>
@@ -71,7 +71,7 @@
             <div class="flex justify-between items-center">
                 <label for="project-name-input" class="block text-sm font-medium text-gray-300">建案名稱 (可複選)</label>
                 <button id="clear-projects-btn" class="text-xs text-cyan-400 hover:text-cyan-300 hidden transition-opacity">清除選取</button>
- </div>
+   </div>
             <div class="relative mt-1">
                 <div id="project-name-container" class="form-multiselect flex flex-nowrap items-center gap-2 p-1 min-h-[42px] rounded-md overflow-x-auto">
                     <input type="text" id="project-name-input" placeholder="請先選縣市..." class="bg-transparent flex-grow outline-none text-base py-1 px-2" disabled autocomplete="off">
@@ -92,7 +92,7 @@
                     <option value="this_year">今年以來</option>
                     <option value="last_2_years">去年＋今年</option>
                     <option value="last_3_years">前年＋去年＋今年</option>
-         </select>
+           </select>
             </div>
             <div><label for="date-start" class="block text-sm font-medium text-gray-300">起始日期</label><input type="date" id="date-start" class="form-input mt-1 block w-full pl-3 pr-2 py-2 text-base rounded-md"></div>
             <div>
@@ -109,7 +109,7 @@
                 <button id="analyze-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed">分析報表</button>
                 <button id="search-btn" class="bg-gradient-to-r from-cyan-accent to-purple-accent text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:opacity-90 transition-all">查詢資料列表</button>
             </div>
-     </div>
+       </div>
     
    </div>
     </div>
@@ -127,15 +127,24 @@
             </nav>
        </div>
         <div id="message-area" class="text-center p-8 text-gray-400">請設定篩選條件後點擊查詢或分析。</div>
-       
+        
         <div id="ranking-report-content" class="tab-content">
-           <div id="metric-cards-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8"></div>
-           <div id="ranking-chart-container" class="mb-8"></div>
-           <div class="overflow-x-auto">
+            <div id="metric-cards-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8"></div>
+            
+            <div class="report-header flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                <h3 class="report-section-title !mb-0 !border-b-0 flex-shrink-0">建案排名分析圖</h3>
+                <div id="treemap-metric-toggle" class="inline-flex bg-dark-card p-1 rounded-lg">
+                    <button data-metric="saleAmountSum" class="avg-type-btn active px-4 py-1 text-sm font-semibold rounded-md transition-colors">交易總價</button>
+                    <button data-metric="houseAreaSum" class="avg-type-btn px-4 py-1 text-sm font-semibold rounded-md transition-colors">房屋面積</button>
+                    <button data-metric="transactionCount" class="avg-type-btn px-4 py-1 text-sm font-semibold rounded-md transition-colors">資料筆數</button>
+                </div>
+            </div>
+
+            <div id="ranking-chart-container" class="mb-8"></div>
+            <div class="overflow-x-auto">
                 <table id="ranking-table" class="min-w-full divide-y divide-gray-800"></table>
             </div>
-       </div>
-       
+        </div>
         <div id="price-band-report-content" class="tab-content">
             <div class="mb-4 report-header">
                 <label class="block text-sm font-medium text-gray-300 mb-2">房型篩選器</label>
@@ -143,7 +152,7 @@
             </div>
             <div id="price-band-chart" class="mb-8 report-header"></div>
             <div class="overflow-x-auto">
-                  <table id="price-band-table" class="min-w-full divide-y divide-gray-800"></table>
+                    <table id="price-band-table" class="min-w-full divide-y divide-gray-800"></table>
             </div>
         </div>
 
@@ -151,72 +160,72 @@
             <div class="report-header flex justify-end items-center mb-4">
                  <label class="text-sm font-medium text-gray-400 mr-3">平均數類型:</label>
                  <div id="avg-type-toggle" class="inline-flex bg-dark-card p-1 rounded-lg">
-                    <button data-type="arithmetic" class="avg-type-btn active px-4 py-1 text-sm font-semibold rounded-md transition-colors">算術平均數</button>
-                    <button data-type="weighted" class="avg-type-btn px-4 py-1 text-sm font-semibold rounded-md transition-colors">加權平均數</button>
+                     <button data-type="arithmetic" class="avg-type-btn active px-4 py-1 text-sm font-semibold rounded-md transition-colors">算術平均數</button>
+                     <button data-type="weighted" class="avg-type-btn px-4 py-1 text-sm font-semibold rounded-md transition-colors">加權平均數</button>
                  </div>
    
              </div>
-             <div class="mb-8 report-header">
+              <div class="mb-8 report-header">
                   <h3 class="report-section-title">住宅單價統計 (住宅大樓/華廈)</h3>
                 <div id="residential-stats-table-container"></div>
                 <div id="residential-stats-extra-info" class="text-sm text-gray-400 mt-4 space-y-1"></div>
-             </div>
-     
+               </div>
+   
  
             <div class="report-header">
                   <h3 class="report-section-title">建案類型比較 (店舖/事務所 vs. 住宅)</h3>
                   <div id="type-comparison-table-container" class="overflow-x-auto"></div>
             </div>
             <div id="average-type-explanation" class="mt-8 p-4 bg-dark-card border border-gray-700 rounded-lg text-sm text-gray-400 space-y-3 report-header">
-          
+         
        <h4 class="font-bold text-gray-200">名詞解釋</h4>
-                 <p><strong class="text-cyan-400">算術平均數 (Arithmetic Mean):</strong> 將每一筆交易的單價直接相加後，除以總筆數。它能反映「一筆典型交易」的單價，不受房屋坪數大小影響，適合了解普遍行情。</p>
+                <p><strong class="text-cyan-400">算術平均數 (Arithmetic Mean):</strong> 將每一筆交易的單價直接相加後，除以總筆數。它能反映「一筆典型交易」的單價，不受房屋坪數大小影響，適合了解普遍行情。</p>
                 <p><strong class="text-purple-400">加權平均數 (Weighted Average):</strong> 以「總房屋總價  總房屋面積」計算。坪數越大的交易，對平均價格的影響力就越大。它更能反映市場的「整體價值」與資金結構。</p>
             </div>
         </div>
         <div id="parking-report-content" class="tab-content">
   
            <div class="mb-8 report-header">
-     
-             <h3 class="report-section-title">房車配比</h3>
-                 <div id="parking-ratio-table-container" class="overflow-x-auto"></div>
+   
+              <h3 class="report-section-title">房車配比</h3>
+                  <div id="parking-ratio-table-container" class="overflow-x-auto"></div>
             </div>
             <div class="mb-8 report-header">
                 <h3 class="report-section-title">各類型車位平均單價</h3>
        
-                 <div id="avg-price-by-type-table-container" class="overflow-x-auto"></div>
-        
-     </div>
-             <div class="report-header">
-                  <h3 class="report-section-title">坡道平面車位分層價格</h3>
-                 <div id="ramp-plane-price-by-floor-table-container"></div>
+                  <div id="avg-price-by-type-table-container" class="overflow-x-auto"></div>
+   
+   </div>
+              <div class="report-header">
+                    <h3 class="report-section-title">坡道平面車位分層價格</h3>
+                   <div id="ramp-plane-price-by-floor-table-container"></div>
                 <p class="text-sm text-gray-500 mt-2">* 此數據僅統計主表中「車位類別」為「坡道平面」的交易，並根據其附表中的車位資料進行彙總。</p>
-     
+   
               </div>
         </div>
-    
    
+  
         <div id="velocity-report-content" class="tab-content">
-             <div class="mb-4 report-header">
-                 <label class="block text-sm font-medium text-gray-300 mb-2">房型篩選器</label>
-                 <div id="velocity-room-filter-container" class="flex flex-wrap gap-2"></div>
+                 <div class="mb-4 report-header">
+                      <label class="block text-sm font-medium text-gray-300 mb-2">房型篩選器</label>
+                      <div id="velocity-room-filter-container" class="flex flex-wrap gap-2"></div>
          
-             </div>
-             <div id="velocity-sub-tabs-container" class="report-header">
+                 </div>
+                 <div id="velocity-sub-tabs-container" class="report-header">
    
-               <nav class="sub-tab-nav">
-                    <button data-view="weekly" class="sub-tab-btn">每週去化</button>
-                    <button data-view="monthly" class="sub-tab-btn active">每月去化</button>
-                  
-               <button data-view="quarterly" class="sub-tab-btn">每季去化</button>
-                  
+                     <nav class="sub-tab-nav">
+                         <button data-view="weekly" class="sub-tab-btn">每週去化</button>
+                         <button data-view="monthly" class="sub-tab-btn active">每月去化</button>
+                        
+                       <button data-view="quarterly" class="sub-tab-btn">每季去化</button>
+                        
    <button data-view="yearly" class="sub-tab-btn">年度去化</button>
-                 </nav>
-             </div>
-             
-             <div id="sales-velocity-chart" class="report-header mb-6"></div>
+                     </nav>
+                 </div>
+                 
+                 <div id="sales-velocity-chart" class="report-header mb-6"></div>
 
-             <div id="velocity-table-container" class="overflow-x-auto"></div>
+                 <div id="velocity-table-container" class="overflow-x-auto"></div>
 
             <div class="report-header mt-8">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -261,7 +270,7 @@
             </div>
 
         <div id="price-grid-report-content" class="tab-content">
-          
+         
           <div class="my-4 report-header">
                 <label class="block text-sm font-medium text-gray-300 mb-2">建案篩選器</label>
                 <div id="price-grid-project-filter-container" class="flex flex-nowrap gap-2 overflow-x-auto py-2 scrollable-filter-container"></div>
@@ -269,89 +278,90 @@
             
             <div class="my-4 p-4 bg-dark-card border border-gray-700 rounded-lg flex items-center justify-between flex-wrap gap-4 report-header">
    
-              <div>
-         
-            <h4 class="font-bold text-gray-200">進階分析：建案調價熱力圖</h4>
-                    <p class="text-sm text-gray-400 mt-1">
-                        啟用此功能可分析建案的調價軌跡。顏色越深，代表該戶成交價相比開盤時的漲幅越大。
-                
-                </p>
-                </div>
-    
-         
+          <div>
+   
+        <h4 class="font-bold text-gray-200">進階分析：建案調價熱力圖</h4>
+                  <p class="text-sm text-gray-400 mt-1">
+                      啟用此功能可分析建案的調價軌跡。顏色越深，代表該戶成交價相比開盤時的漲幅越大。
+                 
+              </p>
+            </div>
+   
+        
                 <div class="flex items-end gap-4">
                     <div>
                         <label for="floor-premium-input" class="block text-xs font-medium text-gray-300 mb-1">
-                       
-      錨定樓層價差
-                             <span class="has-tooltip text-gray-500" data-tooltip="輸入每高一層樓，房屋每坪單價增加的萬數。例如：0.3">
-                                 <i class="fas fa-info-circle"></i>
+                        
+    錨定樓層價差
+                               <span class="has-tooltip text-gray-500" data-tooltip="輸入每高一層樓，房屋每坪單價增加的萬數。例如：0.3">
+                                   <i class="fas fa-info-circle"></i>
   
-                            
-  </span>
+                              
+ </span>
                         </label>
                         <input type="number" id="floor-premium-input" class="form-input w-28 pl-3 pr-2 py-2 text-base rounded-md" value="0.3" step="0.05" min="0">
-             
-                 </div>
-                   
+                 
+                 
+               </div>
+                    
   <button id="back-to-grid-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all hidden"><i class="fas fa-table mr-2"></i>返回銷控表</button>
                     <button id="analyze-heatmap-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-fire mr-2"></i>開始分析</button>
                 </div>
        
-             </div>
+            </div>
 
             <div id="heatmap-info-container" class="hidden my-4 space-y-4">
-      
+     
            <div class="p-4 bg-dark-card border border-gray-700 rounded-lg text-sm text-gray-400 space-y-3">
                     <h4 class="font-bold text-gray-200">名詞解釋</h4>
-                     <p><strong class="text-cyan-400">樓層調整:</strong> <code>(成交樓層 - 基準樓層) * 樓層價差</code>。此數值模擬了因樓層不同而產生的理論價差。</p>
-     
-                   <p><strong class="text-purple-400">調價幅度 (%):</strong> <code>(成交單價 - 基準單價 - 樓層調整) / (基準單價 + 樓層調整)</code>。此數值反映了相較於「開盤基準」，該戶在特定時間點成交時的價格漲跌幅。正值代表漲價，負值代表跌價。背景顏色深淺即代表此數值。</p>
+                       <p><strong class="text-cyan-400">樓層調整:</strong> <code>(成交樓層 - 基準樓層) * 樓層價差</code>。此數值模擬了因樓層不同而產生的理論價差。</p>
+   
+                     <p><strong class="text-purple-400">調價幅度 (%):</strong> <code>(成交單價 - 基準單價 - 樓層調整) / (基準單價 + 樓層調整)</code>。此數值反映了相較於「開盤基準」，該戶在特定時間點成交時的價格漲跌幅。正值代表漲價，負值代表跌價。背景顏色深淺即代表此數值。</p>
   
-               </div>
+                </div>
          
                 <div id="heatmap-legend-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div class="p-4 bg-dark-card border border-gray-700 rounded-lg">
-                        <h4 class="font-bold text-gray-200 mb-2">溢價圖例 (點擊可篩選)</h4>
+                        <div class="p-4 bg-dark-card border border-gray-700 rounded-lg">
+                          <h4 class="font-bold text-gray-200 mb-2">溢價圖例 (點擊可篩選)</h4>
  
-                         <div id="heatmap-color-legend" class="flex flex-wrap gap-x-4 gap-y-2 text-sm"></div>
-                     </div>
-                   
+                            <div id="heatmap-color-legend" class="flex flex-wrap gap-x-4 gap-y-2 text-sm"></div>
+                       </div>
+                       
                <div class="p-4 bg-dark-card border border-gray-700 rounded-lg">
-                      
+                       
    <h4 class="font-bold text-gray-200 mb-2">特殊交易圖例 (點擊可篩選)</h4>
-                         <div id="heatmap-icon-legend" class="flex flex-wrap gap-x-4 gap-y-2 text-sm"></div>
-                   </div>
-             
-             </div>
+                            <div id="heatmap-icon-legend" class="flex flex-wrap gap-x-4 gap-y-2 text-sm"></div>
+                       </div>
+                 
+               </div>
             </div>
 
             <div class="report-header">
   
-               <h3 class="report-section-title">
+                <h3 class="report-section-title">
                     <span>銷控表</span>
                     <button id="share-price-grid-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded-lg text-sm shadow-md transition-all">
   
-                       <i class="fas fa-share-alt mr-2"></i>分享/內嵌
+                        <i class="fas fa-share-alt mr-2"></i>分享/內嵌
        
-             </button>
+                </button>
                 </h3>
                 <div id="unit-color-legend-container" class="flex flex-wrap gap-x-4 gap-y-2 my-4 text-sm"></div>
                 
                 <div id="horizontal-price-grid-container" class="w-full overflow-x-auto"></div>
                   <div id="heatmap-summary-table-container" class="mt-8 hidden"></div>
        
-         <div id="heatmap-horizontal-comparison-table-container" class="mt-8 hidden"></div>
+      <div id="heatmap-horizontal-comparison-table-container" class="mt-8 hidden"></div>
             </div>
-      
+   
         </div>
-       
+        
         <div id="data-list-content" class="tab-content">
-             
+              
           <div id="table-container" class="table-container overflow-x-auto">
                 <table id="results-table" class="min-w-full divide-y divide-gray-800"></table>
          
-     </div>
+   </div>
             <div id="pagination-controls" class="flex justify-between items-center mt-4 text-sm text-gray-400"></div>
         </div>
     </div>
@@ -361,14 +371,14 @@
       <div class="flex items-center justify-center space-x-4 md:space-x-6 flex-wrap gap-y-2">
           <a href="mailto:sqmtalk7@gmail.com" class="hover:text-cyan-400 transition-colors flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="height: 1.2em; width: 1.2em;">
-                <path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z" />
-                <path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z" />
+                  <path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z" />
+                  <path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z" />
               </svg>
               <span>sqmtalk7@gmail.com</span>
           </a>
           <a href="https://www.threads.net/@sqm.talk" target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512" fill="currentColor">
-                  <path d="M336.5 80.4c0-2.3-1.9-4.2-4.2-4.2h-39.3c-13.4 0-26.1 5.3-35.4 14.6L122.9 225.1 63.5 165.7c-9.3-9.3-22-14.6-35.4-14.6H13.5c-2.3 0-4.2 1.9-4.2 4.2v39.3c0 13.4 5.3 26.1 14.6 35.4l84.6 84.6c1.1 1.1 2.3 2.1 3.6 3.1l-84.6 84.6c-9.3-9.3-14.6 22-14.6 35.4v39.3c0 2.3 1.9 4.2 4.2 4.2h39.3c13.4 0 26.1-5.3 35.4-14.6l59.4-59.4 134.5 134.5c9.3 9.3 22 14.6 35.4 14.6h39.3c2.3 0 4.2-1.9 4.2-4.2V323.8c0-13.4-5.3-26.1-14.6-35.4l-84.6-84.6c-1.1-1.1-2.3-2.1-3.6-3.1l84.6-84.6c9.3-9.3 14.6-22 14.6-35.4V80.4zm-62.3-15L238.6 101c-3.1 3.1-3.1 8.2 0 11.3l84.6 84.6c3.1 3.1 8.2 3.1 11.3 0l35.4-35.4c3.1-3.1 3.1-8.2 0-11.3L334.2 84.2c-3.1-3.1-8.2-3.1-11.3 0L274.2 65.4zM122.9 286.9L38.3 431.5c-3.1 3.1-8.2 3.1-11.3 0L.3 404.9c-3.1-3.1-3.1-8.2 0-11.3L84.9 309c3.1-3.1 8.2-3.1 11.3 0l26.7 26.7c3.1 3.1 3.1 8.2 0 11.3zm212.3 15.7l-35.4 35.4c-3.1 3.1-8.2 3.1-11.3 0L153.9 203.3c-3.1-3.1-3.1-8.2 0-11.3l35.4-35.4c3.1-3.1 8.2-3.1 11.3 0l134.5 134.5c3.1 3.1 3.1 8.2 0 11.3z"/>
+                    <path d="M336.5 80.4c0-2.3-1.9-4.2-4.2-4.2h-39.3c-13.4 0-26.1 5.3-35.4 14.6L122.9 225.1 63.5 165.7c-9.3-9.3-22-14.6-35.4-14.6H13.5c-2.3 0-4.2 1.9-4.2 4.2v39.3c0 13.4 5.3 26.1 14.6 35.4l84.6 84.6c1.1 1.1 2.3 2.1 3.6 3.1l-84.6 84.6c-9.3-9.3-14.6 22-14.6 35.4v39.3c0 2.3 1.9 4.2 4.2 4.2h39.3c13.4 0 26.1-5.3 35.4-14.6l59.4-59.4 134.5 134.5c9.3 9.3 22 14.6 35.4 14.6h39.3c2.3 0 4.2-1.9 4.2-4.2V323.8c0-13.4-5.3-26.1-14.6-35.4l-84.6-84.6c-1.1-1.1-2.3-2.1-3.6-3.1l84.6-84.6c9.3-9.3 14.6-22 14.6-35.4V80.4zm-62.3-15L238.6 101c-3.1 3.1-3.1 8.2 0 11.3l84.6 84.6c3.1 3.1 8.2 3.1 11.3 0l35.4-35.4c3.1-3.1 3.1-8.2 0-11.3L334.2 84.2c-3.1-3.1-8.2-3.1-11.3 0L274.2 65.4zM122.9 286.9L38.3 431.5c-3.1 3.1-8.2 3.1-11.3 0L.3 404.9c-3.1-3.1-3.1-8.2 0-11.3L84.9 309c3.1-3.1 8.2-3.1 11.3 0l26.7 26.7c3.1 3.1 3.1 8.2 0 11.3zm212.3 15.7l-35.4 35.4c-3.1 3.1-8.2 3.1-11.3 0L153.9 203.3c-3.1-3.1-3.1-8.2 0-11.3l35.4-35.4c3.1-3.1 8.2-3.1 11.3 0l134.5 134.5c3.1 3.1 3.1 8.2 0 11.3z"/>
               </svg>
               <span>@sqm.talk</span>
           </a>
@@ -381,8 +391,8 @@
 <div id="details-modal" class="modal-overlay hidden">
      <div class="modal-container">
         <div class="flex justify-between items-center mb-6">
-        
-             <h2 id="modal-title" class="text-2xl font-bold text-white">附表詳細資料</h2>
+       
+            <h2 id="modal-title" class="text-2xl font-bold text-white">附表詳細資料</h2>
             <button id="modal-close-btn" class="text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
        
   </div>
@@ -397,13 +407,13 @@
             <button id="share-modal-close-btn" class="text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
         </div>
         <div id="share-modal-content" class="text-gray-300 space-y-4">
-           
+            
   <p>成功產生分享連結！您可以複製此連結並貼到 Notion 或傳送給他人。</p>
             <div class="relative">
                 <input type="text" id="share-url-input" readonly class="form-input w-full pr-12" style="background-color: #1a1d29;">
                 <button id="copy-share-url-btn" class="absolute inset-y-0 right-0 px-4 text-gray-400 hover:text-white">複製</button>
   
-           </div>
+            </div>
             <div id="copy-feedback" class="text-green-400 text-sm hidden">已成功複製到剪貼簿！</div>
         </div>
  
