@@ -9,9 +9,12 @@ let salesVelocityChartInstance = null;
 let priceBandChartInstance = null;
 let rankingChartInstance = null;
 
-// ▼▼▼ 【已修改】將長條圖替換為樹狀圖 (Treemap) ▼▼▼
+// ▼▼▼ 【需求修改處】強化 Treemap 功能 ▼▼▼
 /**
- * 渲染建案銷售總額佔比樹狀圖
+ * 渲染建案分析樹狀圖 (Treemap)
+ * - 支持按不同指標切換 (總價, 面積, 筆數)
+ * - Tooltip 顯示數值與百分比
+ * - 優化顏色以匹配網站風格
  */
 export function renderRankingChart() {
     if (rankingChartInstance) {
@@ -25,38 +28,46 @@ export function renderRankingChart() {
     }
 
     const { projectRanking } = state.analysisDataCache;
+    const currentMetric = state.currentTreemapMetric;
 
-    // 準備 Treemap 所需的資料格式：{ x: '建案名', y: 銷售總額 }
+    // 根據當前選擇的指標，設定對應的資料鍵、名稱和格式化函式
+    const metricConfig = {
+        saleAmountSum: { key: 'saleAmountSum', name: '銷售總額', unit: '萬', decimals: 0 },
+        houseAreaSum: { key: 'houseAreaSum', name: '房屋面積', unit: '坪', decimals: 2 },
+        transactionCount: { key: 'transactionCount', name: '資料筆數', unit: '筆', decimals: 0 }
+    }[currentMetric];
+
+    // 1. 準備 Treemap 資料並計算總計
+    const totalValue = projectRanking.reduce((sum, p) => sum + p[metricConfig.key], 0);
     const seriesData = projectRanking.map(p => ({
         x: p.projectName,
-        y: Math.round(p.saleAmountSum)
+        y: p[metricConfig.key]
     }));
+
+    // 2. 動態生成符合網站風格的顏色範圍
+    const values = seriesData.map(d => d.y).filter(v => v > 0);
+    const maxVal = Math.max(...values);
+    const colorRanges = [
+        { from: 0, to: maxVal * 0.1, color: '#a5b4fc' },      // Light Purple/Blue
+        { from: maxVal * 0.1, to: maxVal * 0.3, color: '#8b5cf6' },  // Purple Accent
+        { from: maxVal * 0.3, to: maxVal * 0.6, color: '#2dd4bf' },  // Teal
+        { from: maxVal * 0.6, to: maxVal, color: '#06b6d4' }     // Cyan Accent
+    ];
 
     const options = {
         series: [{
-            name: '銷售總額',
+            name: metricConfig.name,
             data: seriesData
         }],
         chart: {
-            type: 'treemap', // <-- 圖表類型已修改
+            type: 'treemap',
             height: 450,
             background: 'transparent',
-            toolbar: { 
-                show: true,
-                tools: {
-                    download: true,
-                    selection: false,
-                    zoom: false,
-                    zoomin: false,
-                    zoomout: false,
-                    pan: false,
-                    reset: false
-                }
-            },
+            toolbar: { show: true },
             foreColor: '#e5e7eb'
         },
         title: {
-            text: '建案銷售總額佔比 (Treemap)',
+            text: `建案排名 - 依${metricConfig.name}分佈`,
             align: 'center',
             style: {
                 fontSize: '16px',
@@ -65,16 +76,10 @@ export function renderRankingChart() {
         },
         plotOptions: {
             treemap: {
-                distributed: true, // 讓每個方塊都有不同顏色
-                enableShades: true, // 啟用顏色深淺變化
+                distributed: true,
+                enableShades: false, // 關閉自動陰影，使用自訂顏色
                 colorScale: {
-                    // 顏色範圍：從淺紫到深紫
-                    ranges: [
-                        { from: 0, to: 100000, color: '#a78bfa' },
-                        { from: 100001, to: 500000, color: '#8b5cf6' },
-                        { from: 500001, to: 1000000, color: '#7c3aed' },
-                        { from: 1000001, to: Infinity, color: '#6d28d9' }
-                    ]
+                    ranges: colorRanges
                 }
             }
         },
@@ -82,7 +87,12 @@ export function renderRankingChart() {
             theme: 'dark',
             y: {
                 formatter: function(value) {
-                    return `${value.toLocaleString()} 萬`;
+                    const percentage = totalValue > 0 ? (value / totalValue * 100).toFixed(2) : 0;
+                    const formattedValue = value.toLocaleString('zh-TW', { 
+                        minimumFractionDigits: metricConfig.decimals, 
+                        maximumFractionDigits: metricConfig.decimals 
+                    });
+                    return `${formattedValue} ${metricConfig.unit} (${percentage}%)`;
                 },
                 title: {
                     formatter: function(seriesName) {
