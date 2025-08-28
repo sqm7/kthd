@@ -25,6 +25,22 @@ export async function checkAuth() {
     }
 }
 
+{/* */}
+export async function getUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+}
+
+export async function signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        console.error('登出失敗:', error);
+        throw error;
+    }
+}
+{/* */}
+
+
 export async function fetchData(filters, pagination) {
     const headers = await getAuthHeaders();
     if (!headers) throw new Error("認證失敗");
