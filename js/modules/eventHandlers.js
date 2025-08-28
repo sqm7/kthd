@@ -253,6 +253,24 @@ export function toggleAnalyzeButtonState() {
     dom.analyzeHeatmapBtn.disabled = !(isCountySelected && isValidType);
 }
 
+// ▼▼▼ 【新增處】處理Treemap指標切換 ▼▼▼
+export function handleTreemapMetricChange(e) {
+    const button = e.target.closest('.avg-type-btn');
+    if (!button || button.classList.contains('active')) return;
+
+    const metric = button.dataset.metric;
+    state.currentTreemapMetric = metric;
+
+    dom.treemapMetricToggle.querySelector('.active').classList.remove('active');
+    button.classList.add('active');
+
+    // Re-render the chart with the new metric
+    if (state.analysisDataCache) {
+        chartRenderer.renderRankingChart();
+    }
+}
+// ▲▲▲ 【新增結束】 ▲▲▲
+
 export function switchAverageType(type) {
     if (state.currentAverageType === type || !type) return;
     state.currentAverageType = type;
