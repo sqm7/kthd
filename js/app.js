@@ -25,7 +25,7 @@ import {
     handleVelocityRoomFilterClick,
     handleVelocitySubTabClick,
     handleHeatmapMetricToggle,
-    handleTreemapMetricChange,
+    handleTreemapMetricChange, // ▼▼▼ 【新增處】引入新的事件處理函式 ▼▼▼
     handlePriceGridProjectFilterClick,
     analyzeHeatmap,
     handleBackToGrid,
@@ -38,6 +38,7 @@ import { state } from './modules/state.js';
 // 引入拆分後的渲染模組
 import * as reportRenderer from './modules/renderers/reports.js';
 import * as chartRenderer from './modules/renderers/charts.js';
+
 
 async function setupUserStatus() {
     try {
@@ -62,12 +63,13 @@ async function setupUserStatus() {
     }
 }
 
+
 function initialize() {
     api.checkAuth().catch(err => {
         console.error("認證檢查失敗:", err);
     });
 
-    setupUserStatus(); // 呼叫函式來設定右上角的 UI
+    setupUserStatus(); // 呼叫新的函式來設定右上角的 UI
 
     try {
         const countyNames = Object.keys(districtData);
@@ -148,8 +150,9 @@ function initialize() {
         if (e.target.matches('.avg-type-btn')) switchAverageType(e.target.dataset.type);
     });
 
-    // 綁定Treemap指標切換事件
+    // ▼▼▼ 【新增處】綁定Treemap指標切換事件 ▼▼▼
     dom.treemapMetricToggle.addEventListener('click', handleTreemapMetricChange);
+    // ▲▲▲ 【新增結束】 ▲▲▲
 
     // --- 去化分析與垂直水平分析相關事件 ---
     dom.priceBandRoomFilterContainer.addEventListener('click', handlePriceBandRoomFilterClick);
