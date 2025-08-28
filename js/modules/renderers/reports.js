@@ -5,7 +5,7 @@ import { state } from '../state.js';
 import * as ui from '../ui.js';
 import { renderRankingPagination } from './uiComponents.js';
 import { renderVelocityTable } from './tables.js';
-import { renderAreaHeatmap, renderSalesVelocityChart, renderPriceBandChart } from './charts.js';
+import { renderAreaHeatmap, renderSalesVelocityChart, renderPriceBandChart, renderRankingChart } from './charts.js';
 import { displayCurrentPriceGrid } from './heatmap.js';
 
 
@@ -16,6 +16,10 @@ export function renderRankingReport() {
     
     dom.metricCardsContainer.innerHTML = `<div class="metric-card"><div class="metric-card-title">市場去化總銷售金額</div><div><span class="metric-card-value">${ui.formatNumber(coreMetrics.totalSaleAmount, 0)}</span><span class="metric-card-unit">萬</span></div></div><div class="metric-card"><div class="metric-card-title">總銷去化房屋坪數</div><div><span class="metric-card-value">${ui.formatNumber(coreMetrics.totalHouseArea, 2)}</span><span class="metric-card-unit">坪</span></div></div><div class="metric-card"><div class="metric-card-title">總平均單價</div><div><span class="metric-card-value">${ui.formatNumber(coreMetrics.overallAveragePrice, 2)}</span><span class="metric-card-unit">萬/坪</span></div></div><div class="metric-card"><div class="metric-card-title">總交易筆數</div><div><span class="metric-card-value">${coreMetrics.transactionCount.toLocaleString()}</span><span class="metric-card-unit">筆</span></div></div>`;
     
+    // ▼▼▼ 【新增】呼叫新的圖表渲染函式 ▼▼▼
+    renderRankingChart();
+    // ▲▲▲ 【新增結束】 ▲▲▲
+
     projectRanking.sort((a, b) => {
         const valA = a[state.currentSort.key];
         const valB = b[state.currentSort.key];
@@ -43,8 +47,6 @@ export function renderRankingReport() {
     renderRankingPagination(projectRanking.length);
 }
 
-// ▼▼▼ 【修改處】 ▼▼▼
-// ▼▼▼ 【修改處】 ▼▼▼
 export function renderPriceBandReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.priceBandAnalysis) return;
     
@@ -52,10 +54,8 @@ export function renderPriceBandReport() {
 
     const allRoomTypes = [...new Set(priceBandAnalysis.map(item => item.roomType))];
     
-    // 【修改 1】更新排序陣列
     const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公/事務所', '廠辦/工廠', '其他'];
 
-    // 【修改 2】更新排序邏輯，將 '工廠/倉庫' 和 '辦公' 都對應到新的分類上
     allRoomTypes.sort((a, b) => {
         const mapToNewCategory = (type) => {
             if (type === '工廠/倉庫') return '廠辦/工廠';
@@ -77,7 +77,6 @@ export function renderPriceBandReport() {
         state.selectedPriceBandRoomTypes = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
     }
 
-    // 【修改 3】渲染按鈕時，統一顯示文字，data-room-type 保留原始值以利篩選
     dom.priceBandRoomFilterContainer.innerHTML = allRoomTypes.map(roomType => {
         const isActive = state.selectedPriceBandRoomTypes.includes(roomType);
         return `<button class="capsule-btn ${isActive ? 'active' : ''}" data-room-type="${roomType}">${roomType}</button>`;
@@ -85,7 +84,6 @@ export function renderPriceBandReport() {
 
     const filteredDataForTable = priceBandAnalysis.filter(item => state.selectedPriceBandRoomTypes.includes(item.roomType));
 
-    // 同樣更新表格的排序邏輯
     filteredDataForTable.sort((a, b) => { 
         const mapToNewCategory = (type) => {
             if (type === '工廠/倉庫') return '廠辦/工廠';
@@ -106,7 +104,6 @@ export function renderPriceBandReport() {
     let bodyHtml = '<tbody>';
 
     if (filteredDataForTable.length > 0) {
-        // 【修改 4】渲染表格時，直接使用從後端收到的房型文字
         filteredDataForTable.forEach(item => { 
             bodyHtml += `<tr class="hover:bg-dark-card transition-colors"><td>${item.roomType}</td><td>${item.bathrooms !== null ? item.bathrooms : '-'}</td><td>${item.count.toLocaleString()}</td><td>${ui.formatNumber(item.avgPrice, 0)}</td><td>${ui.formatNumber(item.minPrice, 0)}</td><td>${ui.formatNumber(item.q1Price, 0)}</td><td>${ui.formatNumber(item.medianPrice, 0)}</td><td>${ui.formatNumber(item.q3Price, 0)}</td><td>${ui.formatNumber(item.maxPrice, 0)}</td></tr>`; 
         });
@@ -119,7 +116,6 @@ export function renderPriceBandReport() {
 
     renderPriceBandChart();
 }
-// ▲▲▲ 【修改結束】 ▲▲▲
 
 export function renderUnitPriceReport() {
     if (!state.analysisDataCache || !state.analysisDataCache.unitPriceAnalysis) return;
@@ -190,7 +186,6 @@ export function renderSalesVelocityReport() {
     const { allRoomTypes } = state.analysisDataCache.salesVelocityAnalysis;
 
     if (allRoomTypes && allRoomTypes.length > 0) {
-        // ▼▼▼ 【新增處】在此處加入與總價帶分析相同的排序邏輯 ▼▼▼
         const sortOrder = ['套房', '1房', '2房', '3房', '4房', '5房以上', '毛胚', '店舖', '辦公/事務所', '廠辦/工廠', '其他'];
         allRoomTypes.sort((a, b) => {
             const indexA = sortOrder.indexOf(a);
@@ -200,7 +195,6 @@ export function renderSalesVelocityReport() {
             if (indexB !== -1) return 1;
             return a.localeCompare(b);
         });
-        // ▲▲▲ 【新增結束】 ▲▲▲
 
         const defaultSelections = ['1房', '2房', '3房'];
         state.selectedVelocityRooms = allRoomTypes.filter(roomType => defaultSelections.includes(roomType));
