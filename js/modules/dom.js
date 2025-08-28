@@ -1,4 +1,4 @@
-// js/modules/dom.js
+// js/modules/dom.js 
 
 export const dom = {
   countySelect: document.getElementById('county'),
