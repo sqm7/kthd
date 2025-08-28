@@ -38,10 +38,39 @@ import { state } from './modules/state.js';
 import * as reportRenderer from './modules/renderers/reports.js';
 import * as chartRenderer from './modules/renderers/charts.js';
 
+{/* */}
+async function setupUserStatus() {
+    try {
+        const user = await api.getUser();
+        const container = document.getElementById('user-status-container');
+        if (user && container) {
+            container.innerHTML = `
+                <p class="text-gray-300">歡迎, ${user.email}</p>
+                <button id="logout-btn" class="mt-1 text-red-400 hover:text-red-300 transition-colors">登出</button>
+            `;
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                try {
+                    await api.signOut();
+                    window.location.href = 'login.html';
+                } catch (e) {
+                    alert('登出時發生錯誤。');
+                }
+            });
+        }
+    } catch (error) {
+        console.error('無法設定使用者狀態:', error);
+    }
+}
+{/* */}
+
 function initialize() {
     api.checkAuth().catch(err => {
         console.error("認證檢查失敗:", err);
     });
+
+    {/* */}
+    setupUserStatus(); // 呼叫新的函式來設定右上角的 UI
+    {/* */}
 
     try {
         const countyNames = Object.keys(districtData);
