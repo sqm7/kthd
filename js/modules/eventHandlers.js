@@ -13,6 +13,23 @@ import * as chartRenderer from './renderers/charts.js';
 import * as heatmapRenderer from './renderers/heatmap.js';
 import * as componentRenderer from './renderers/uiComponents.js';
 
+// ▼▼▼ 新增的程式碼 ▼▼▼
+export function handleRankingChartMetricChange(e) {
+    const button = e.target.closest('.avg-type-btn');
+    if (!button || button.classList.contains('active')) return;
+
+    const metric = button.dataset.metric;
+    state.currentRankingChartMetric = metric;
+
+    // 更新按鈕的 active 狀態
+    dom.rankingChartMetricToggle.querySelector('.active').classList.remove('active');
+    button.classList.add('active');
+
+    // 重新渲染圖表
+    chartRenderer.renderRankingChart();
+}
+// ▲▲▲ 新增結束 ▲▲▲
+
 // Main data fetching and analysis functions
 export async function mainFetchData() {
     ui.showLoading('查詢中，請稍候...');
