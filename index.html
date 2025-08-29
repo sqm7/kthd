@@ -131,6 +131,21 @@
         <div id="ranking-report-content" class="tab-content">
            <div id="metric-cards-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8"></div>
            <div id="ranking-chart-container" class="mb-8"></div>
+            <div id="ranking-report-content" class="tab-content">
+    <div id="metric-cards-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8"></div>
+
+    <div class="mb-4 flex justify-center items-center">
+        <div id="ranking-chart-metric-toggle" class="inline-flex bg-dark-card p-1 rounded-lg">
+            <button data-metric="saleAmountSum" class="avg-type-btn active px-4 py-1 text-sm font-semibold rounded-md transition-colors">交易總價</button>
+            <button data-metric="houseAreaSum" class="avg-type-btn px-4 py-1 text-sm font-semibold rounded-md transition-colors">房屋面積</button>
+            <button data-metric="transactionCount" class="avg-type-btn px-4 py-1 text-sm font-semibold rounded-md transition-colors">資料筆數</button>
+        </div>
+    </div>
+    <div id="ranking-chart-container" class="mb-8"></div>
+    <div class="overflow-x-auto">
+        <table id="ranking-table" class="min-w-full divide-y divide-gray-800"></table>
+    </div>
+</div>
            <div class="overflow-x-auto">
                 <table id="ranking-table" class="min-w-full divide-y divide-gray-800"></table>
             </div>
