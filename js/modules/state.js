@@ -25,9 +25,9 @@ export const state = {
     areaHeatmapChart: null,
     lastHeatmapDetails: null, // 儲存上次點擊熱力圖的詳細數據
     currentHeatmapDetailMetric: 'median', // 預設顯示中位數
-    // ▼▼▼ 新增的程式碼 ▼▼▼
-    currentRankingChartMetric: 'saleAmountSum', // 'saleAmountSum', 'houseAreaSum', 'transactionCount'
-    // ▲▲▲ 新增結束 ▲▲▲
+    // ▼▼▼ 【新增的程式碼】 ▼▼▼
+    currentRankingChartMetric: 'saleAmountSum', // 追蹤排名圖表的指標
+    // ▲▲▲ 【新增結束】 ▲▲▲
 };
 
 // 根據當前狀態獲取篩選條件
