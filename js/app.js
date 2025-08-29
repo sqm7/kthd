@@ -4,7 +4,7 @@ import { supabase } from './supabase-client.js';
 import { state, resetStateForNewAnalysis } from './modules/state.js';
 import { dom } from './modules/dom.js';
 import {
-    initGlobalEventListeners, // 引入新的全域事件監聽初始化函式
+    initGlobalEventListeners, // 引入全域事件監聽初始化函式
     handleCountyChange,
     handleDistrictChange,
     handleTypeChange,
@@ -36,24 +36,25 @@ import { initializeUI } from './modules/ui.js';
  * 主要應用程式初始化函數
  */
 async function initialize() {
-    // 1. 檢查用戶登入狀態
+    // 1. 檢查用戶登入狀態 (這是會自動跳轉的核心邏輯)
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         console.log("未登入，導向登入頁面...");
+        // 如果沒有 session，就直接跳轉，後面的代碼不會執行
         window.location.href = '/login.html';
         return; 
     }
-    console.log("已登入", session.user.email);
-    // 在 UI 上顯示用戶 email
+    
+    // 如果已登入，則繼續執行後續初始化
+    console.log("已登入:", session.user.email);
     if (dom.userEmail) {
         dom.userEmail.textContent = session.user.email;
     }
 
-
     // 2. 初始化UI元件 (載入縣市、設定預設日期等)
     await initializeUI();
 
-    // 3. 綁定【不會】因重繪而失效的事件監聽器
+    // 3. 綁定事件監聽器
     // --- 主要篩選器事件 ---
     dom.countySelect.addEventListener('change', handleCountyChange);
     dom.districtSelect.addEventListener('change', handleDistrictChange);
@@ -107,8 +108,8 @@ async function checkForSharedFilters() {
             if (data && data.filters) {
                 console.log('從分享連結載入篩選條件:', data.filters);
                 resetStateForNewAnalysis(); 
-                await initializeUI(data.filters); // 使用載入的篩選條件重新初始化UI
-                await handleAnalysisButtonClick(); // 自動觸發分析
+                await initializeUI(data.filters);
+                await handleAnalysisButtonClick();
             }
         } catch (error) {
             console.error('無法從分享連結載入報告:', error);
@@ -123,11 +124,16 @@ async function checkForSharedFilters() {
 
 // --- 應用程式啟動 ---
 
-// 步驟 1: 立即設定全域事件監聽器，確保登出等按鈕始終有效
-initGlobalEventListeners();
-
-// 步驟 2: DOM 完全載入後執行初始化和後續檢查
+// ▼▼▼ 【關鍵修正】 ▼▼▼
+// 確保所有操作都在 DOM (頁面) 完全載入後才執行
 document.addEventListener('DOMContentLoaded', async () => {
+    
+    // 步驟 1: 設定全域事件監聽器 (例如：登出按鈕)
+    initGlobalEventListeners();
+
+    // 步驟 2: 執行主要初始化流程 (包含檢查登入狀態)
     await initialize();
+    
+    // 步驟 3: 檢查是否有分享連結的 token
     await checkForSharedFilters();
 });
