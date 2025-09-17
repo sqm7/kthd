@@ -21,34 +21,38 @@
         }
     </script>
     <style>
-        /* --- 基礎樣式 --- */
         body { 
-            font-family: 'Inter', 'Noto Sans TC', sans-serif;
-            /* ▼▼▼ 【修改處】新增背景圖片 ▼▼▼ */
-            background-image: url('css/images/loginbackgroud.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            background-color: #1a1d29; /* Fallback color */
         }
 
-        /* ▼▼▼ 【修改處】新增半透明遮罩層樣式 ▼▼▼ */
-        #bg-overlay {
+        #background-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(26, 29, 41, 0.8); /* 深色半透明背景 */
-            z-index: -1; /* 將遮罩層置於內容之後、背景圖片之上 */
+            z-index: -2; /* Ensure it's behind the overlay */
+            background-image: url('css/images/loginbackground.jpg'); /* Correct path */
+            background-size: cover;
+            background-position: center;
+        }
+
+        #background-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: rgba(26, 29, 41, 0.8); /* Semi-transparent dark overlay */
         }
 
         .form-input { background-color: #1f2937; border: 1px solid #4b5563; color: #d1d5db; }
         .form-input:focus { border-color: #06b6d4; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5); outline: none; }
         .loader-sm { border: 2px solid #374151; border-top: 2px solid #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* --- 頁籤樣式 --- */
+        
         .tab-button {
             padding: 0.75rem 1rem;
             font-weight: 500;
@@ -61,34 +65,10 @@
             color: #06b6d4;
             border-bottom-color: #06b6d4;
         }
-
-        /* --- 功能亮點列表 --- */
-        .feature-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem; /* 16px */
+        /* Set a fixed minimum height for the form container to prevent jiggling */
+        #form-container {
+            min-height: 500px; 
         }
-        .feature-icon {
-            background-color: rgba(6, 182, 212, 0.1);
-            color: #06b6d4;
-            border-radius: 0.5rem; /* 8px */
-            flex-shrink: 0;
-            width: 3rem; /* 48px */
-            height: 3rem; /* 48px */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .feature-icon i {
-            font-size: 1.5rem; /* 24px */
-        }
-
-        /* ▼▼▼ 【新增修改】等比例縮放主內容區塊 ▼▼▼ */
-        #main-content-wrapper {
-            transform: scale(0.9);
-            transform-origin: top center;
-        }
-        
     </style>
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -214,42 +194,41 @@
         });
     </script>
 </head>
-<body class="text-gray-200 flex flex-col items-center justify-center min-h-screen p-4">
+<body class="text-gray-200 min-h-screen flex flex-col p-6">
     
-    <div id="bg-overlay"></div>
+    <div id="background-container"></div>
+    <div id="background-overlay"></div>
 
-    <div id="main-content-wrapper" class="w-full max-w-6xl mx-auto">
-        <header class="text-center mb-16">
-            <h1 class="text-4xl font-extrabold text-white tracking-tight leading-tight">平米內參<br><span class="text-3xl font-bold">預售屋數據儀表板</span></h1>
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            
-            <div class="hidden lg:block space-y-8">
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-chart-pie"></i></div>
-                    <div>
-                        <h3 class="font-bold text-xl text-white">預售屋核心指標與排名</h3>
-                        <p class="text-gray-400 mt-2">洞悉預售屋市場全局，掌握建案銷售排行，快速了解各建案的銷售總額、面積、交易量與市場佔比。</p>
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-search-dollar"></i></div>
-                    <div>
-                        <h3 class="font-bold text-xl text-white">預售屋多維度數據分析</h3>
-                        <p class="text-gray-400 mt-2">從總價、單價、車位到房型去化，對預售屋市場進行深度剖析，提供您最完整的價格結構與銷售趨勢。</p>
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon"><i class="fas fa-border-all"></i></div>
-                    <div>
-                        <h3 class="font-bold text-xl text-white">獨家預售屋垂直水平分析</h3>
-                        <p class="text-gray-400 mt-2">以視覺化銷控表與熱力圖，揭示預售建案的價格策略與調價軌跡，找出超值或溢價的戶型。</p>
-                    </div>
+    <div class="flex-grow flex items-center justify-center">
+        <div class="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-16">
+        
+            <div class="flex-1 text-center lg:text-left mb-12 lg:mb-0">
+                <header class="mb-8">
+                    <h1 class="text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">平米內參<br><span class="text-3xl lg:text-4xl font-bold">預售屋數據儀表板</span></h1>
+                </header>
+                <div class="space-y-6 text-gray-300 max-w-lg mx-auto lg:mx-0">
+                    <p class="text-lg">
+                        解鎖專業級的預售屋市場洞察力。我們整合了最新的實價登錄數據，提供即時、深入的分析報告，幫助您做出更精準的投資決策。
+                    </p>
+                    <ul class="space-y-3 text-left inline-block">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-chart-pie mt-1 text-cyan-accent"></i>
+                            <span><strong>多維度分析：</strong> 從核心指標、總價帶、去化速度到單價分析，全方位剖析市場趨勢。</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-th mt-1 text-cyan-accent"></i>
+                            <span><strong>獨家銷控表：</strong> 視覺化的垂直水平價盤，模擬真實銷控表，讓您一眼看穿建案佈局與價格策略。</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-fire mt-1 text-cyan-accent"></i>
+                            <span><strong>調價熱力圖：</strong> 獨家演算法分析建案的調價軌跡，洞悉漲跌趨勢與溢價空間。</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
 
-            <main id="form-container" class="bg-dark-card p-8 rounded-xl shadow-lg w-full max-w-sm mx-auto">
+            <main id="form-container" class="bg-dark-card p-6 rounded-xl shadow-lg w-full max-w-sm flex-shrink-0">
+                
                 <div class="flex border-b border-gray-700 mb-6">
                     <button id="login-tab" class="tab-button active">登入</button>
                     <button id="register-tab" class="tab-button">註冊</button>
@@ -298,11 +277,13 @@
                 </form>
 
                 <div id="message" class="text-red-400 text-center min-h-[2.5rem] mt-4"></div>
+
             </main>
+
         </div>
     </div>
-    
-    <footer class="text-center py-8 mt-auto text-gray-500 text-sm">
+
+    <footer class="text-center py-8 text-gray-500 text-sm">
         <div class="flex items-center justify-center space-x-4 md:space-x-6 flex-wrap gap-y-2">
             <a href="mailto:sqmtalk7@gmail.com" class="hover:text-cyan-400 transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="height: 1.2em; width: 1.2em;">
