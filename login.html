@@ -65,10 +65,6 @@
             color: #06b6d4;
             border-bottom-color: #06b6d4;
         }
-        /* Set a fixed minimum height for the form container to prevent jiggling */
-        #form-container {
-            min-height: 500px; 
-        }
     </style>
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -194,12 +190,12 @@
         });
     </script>
 </head>
-<body class="text-gray-200 min-h-screen flex flex-col p-6">
+<body class="text-gray-200 flex flex-col p-6">
     
     <div id="background-container"></div>
     <div id="background-overlay"></div>
 
-    <div class="flex-grow flex items-center justify-center">
+    <div class="flex-grow flex items-center justify-center py-20">
         <div class="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-16">
         
             <div class="flex-1 text-center lg:text-left mb-12 lg:mb-0">
@@ -227,61 +223,74 @@
                 </div>
             </div>
 
-            <main id="form-container" class="bg-dark-card p-6 rounded-xl shadow-lg w-full max-w-sm flex-shrink-0">
+            <main class="bg-dark-card p-6 rounded-xl shadow-lg w-full max-w-sm flex-shrink-0">
                 
                 <div class="flex border-b border-gray-700 mb-6">
                     <button id="login-tab" class="tab-button active">登入</button>
                     <button id="register-tab" class="tab-button">註冊</button>
                 </div>
 
-                <form id="login-form">
-                    <div class="space-y-6">
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
-                            <input type="email" id="email" name="email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
+                <div id="form-wrapper" style="min-height: 340px;">
+                    <form id="login-form">
+                        <div class="space-y-6">
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
+                                <input type="email" id="email" name="email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
+                            </div>
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">密碼</label>
+                                <input type="password" id="password" name="password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="current-password">
+                            </div>
+                            <div>
+                                <button type="submit" id="login-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <div class="loader-sm hidden"></div>
+                                    <span>登入</span>
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-300 mb-2">密碼</label>
-                            <input type="password" id="password" name="password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="current-password">
-                        </div>
-                        <div>
-                            <button type="submit" id="login-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                <div class="loader-sm hidden"></div>
-                                <span>登入</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                    </form>
 
-                <form id="register-form" class="hidden">
-                    <div class="space-y-6">
-                        <div>
-                            <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
-                            <input type="email" id="register-email" name="register-email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
+                    <form id="register-form" class="hidden">
+                        <div class="space-y-6">
+                            <div>
+                                <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">電子郵件</label>
+                                <input type="email" id="register-email" name="register-email" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required autocomplete="email">
+                            </div>
+                            <div>
+                                <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">密碼 (至少6位數)</label>
+                                <input type="password" id="register-password" name="register-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required minlength="6">
+                            </div>
+                            <div>
+                                <label for="confirm-password" class="block text-sm font-medium text-gray-300 mb-2">確認密碼</label>
+                                <input type="password" id="confirm-password" name="confirm-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required minlength="6">
+                            </div>
+                            <div>
+                                <button type="submit" id="register-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <div class="loader-sm hidden"></div>
+                                    <span>註冊</span>
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">密碼 (至少6位數)</label>
-                            <input type="password" id="register-password" name="register-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required minlength="6">
-                        </div>
-                        <div>
-                            <label for="confirm-password" class="block text-sm font-medium text-gray-300 mb-2">確認密碼</label>
-                            <input type="password" id="confirm-password" name="confirm-password" class="form-input block w-full pl-3 pr-10 py-3 text-base rounded-md" required minlength="6">
-                        </div>
-                        <div>
-                            <button type="submit" id="register-submit-button" class="w-full flex justify-center items-center bg-cyan-accent hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                <div class="loader-sm hidden"></div>
-                                <span>註冊</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
+                    </form>
+                </div>
                 <div id="message" class="text-red-400 text-center min-h-[2.5rem] mt-4"></div>
 
             </main>
 
         </div>
     </div>
+
+    <section class="py-16 lg:py-24">
+        <div class="w-full max-w-5xl mx-auto px-6">
+            <h2 class="text-3xl lg:text-4xl font-bold text-center text-white mb-12">
+                功能預覽
+            </h2>
+            <div class="space-y-12">
+                <img src="css/images/preview-1.jpg" alt="功能預覽圖1" class="rounded-xl shadow-2xl w-full">
+                <img src="css/images/preview-2.jpg" alt="功能預覽圖2" class="rounded-xl shadow-2xl w-full">
+            </div>
+        </div>
+    </section>
 
     <footer class="text-center py-8 text-gray-500 text-sm">
         <div class="flex items-center justify-center space-x-4 md:space-x-6 flex-wrap gap-y-2">
