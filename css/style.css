@@ -432,3 +432,83 @@ span.flatpickr-weekday {
     white-space: pre-line;
     padding: 8px 12px;
 }
+
+/* --- ▼▼▼ 【新增】資料列表的摘要/明細樣式 ▼▼▼ --- */
+#results-table {
+    table-layout: auto; /* 改為 auto 以適應摘要內容 */
+    border-collapse: separate; /* 為了圓角 */
+    border-spacing: 0;
+}
+#results-table thead th {
+    white-space: nowrap; /* 確保表頭不換行 */
+}
+#results-table tbody.data-item-group {
+    border-bottom: 1px solid var(--color-disabled-bg);
+}
+#results-table tbody.data-item-group:last-child {
+    border-bottom: none;
+}
+.summary-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.summary-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.summary-row td {
+    border-bottom: none; /* 移除摘要列的底線 */
+    white-space: nowrap;
+}
+.details-row {
+    display: none; /* 預設隱藏 */
+}
+.details-cell {
+    background-color: #111827;
+    padding: 1.5rem;
+}
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem 2rem;
+}
+.details-grid > div {
+    display: flex;
+    flex-direction: column;
+}
+.details-grid .key {
+    font-weight: 600;
+    color: var(--color-text-dark);
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+}
+.details-grid .value {
+    color: var(--color-text-light);
+    word-break: break-all;
+}
+.details-toggle-btn, .details-btn {
+    padding: 0.3rem 1rem;
+    border: 1px solid var(--color-cyan-accent);
+    color: var(--color-cyan-accent);
+    background-color: transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.details-toggle-btn:hover, .details-btn:hover {
+    background-color: rgba(6, 182, 212, 0.2);
+    color: #67e8f9;
+}
+.details-btn {
+    background-color: var(--color-purple-accent);
+    border-color: var(--color-purple-accent);
+    color: white;
+}
+.details-btn:hover {
+    background-color: #7c3aed;
+    border-color: #7c3aed;
+    color: white;
+}
+/* --- ▲▲▲ 新增結束 ▲▲▲ --- */
