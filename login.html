@@ -98,38 +98,12 @@
         }
         .tab-button.active { color: #06b6d4; border-bottom-color: #06b6d4; }
         
-        /* --- ▼▼▼ 【最終修正版】▼▼▼ */
-        .feature-section {
-            display: grid; 
-            grid-template-columns: 1fr; /* 手機版：單欄佈局 */
-            align-items: center; 
-            gap: 2rem; 
-            padding: 5rem 2rem;
-            max-width: 1200px; 
-            margin: auto;
-        }
-        
-        /* 電腦版：啟用兩欄式佈局 */
-        @media (min-width: 1024px) {
-            .feature-section { 
-                grid-template-columns: repeat(2, minmax(0, 1fr)); 
-                gap: 5rem; 
-            }
-            /* 預設情況下，HTML中第一個元素在左欄，第二個在右欄 */
-            .feature-section > *:nth-child(1) { grid-column-start: 1; }
-            .feature-section > *:nth-child(2) { grid-column-start: 2; }
-
-            /* 對於有 reverse class 的區塊，交換欄位順序 */
-            /* HTML中第一個元素(圖片)放到右欄 */
-            .feature-section.reverse > *:nth-child(1) { grid-column-start: 2; }
-            /* HTML中第二個元素(文字)放到左欄 */
-            .feature-section.reverse > *:nth-child(2) { grid-column-start: 1; }
-        }
-        /* --- ▲▲▲ 【修改結束】▲▲▲ */
+        /* --- 移除 .feature-section 的自訂排版規則，改由 Tailwind class 直接控制 --- */
 
         .feature-annotation { border-left: 2px solid #4b5563; padding-left: 1.5rem; }
 
         .image-container {
+            width: 100%;
             position: relative;
             border-radius: 0.75rem;
             overflow: hidden;
@@ -200,8 +174,8 @@
         </div>
     </section>
 
-    <main id="features">
-        <section class="feature-section scroll-animate">
+    <main id="features" class="max-w-7xl mx-auto px-8">
+        <section class="feature-section scroll-animate grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-20 py-20">
             <div class="image-container">
                 <img src="css/images/preview-1.jpg" alt="核心指標與排名">
                 <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
@@ -218,12 +192,12 @@
             </div>
         </section>
 
-        <section class="feature-section scroll-animate reverse">
-            <div class="image-container">
+        <section class="feature-section scroll-animate grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-20 py-20">
+            <div class="image-container lg:order-last">
                  <img src="css/images/preview-5.jpg" alt="房型去化分析">
                  <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
             </div>
-            <div class="feature-text">
+            <div class="feature-text lg:order-first">
                 <h2 class="text-3xl font-bold mb-4 text-white">房型去化分析</h2>
                 <p class="text-lg text-gray-300 mb-6">掌握市場風向，預測未來趨勢。透過動態趨勢圖與熱力圖，追蹤不同房型的銷售速度與主力面積規格，幫助您在產品規劃與銷售策略上，永遠領先一步。</p>
                  <div class="feature-annotation space-y-4">
@@ -235,7 +209,7 @@
             </div>
         </section>
         
-        <section class="feature-section scroll-animate">
+        <section class="feature-section scroll-animate grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-20 py-20">
             <div class="image-container">
                 <img src="css/images/preview-6.jpg" alt="垂直水平分析">
                 <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
@@ -251,7 +225,7 @@
                 </div>
             </div>
         </section>
-    </main>
+        </main>
 
     <footer class="text-center py-8 text-gray-500 text-sm bg-dark-card">
         <div class="flex items-center justify-center space-x-4 md:space-x-6 flex-wrap gap-y-2">
