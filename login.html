@@ -30,15 +30,30 @@
             overflow-x: hidden;
         }
 
-        /* --- 滾動觸發動畫 --- */
-        .scroll-animate { opacity: 0; transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
-        .scroll-animate.fade-in-up { transform: translateY(40px); }
-        .scroll-animate.is-visible { opacity: 1; transform: translateY(0); }
+        .scroll-animate { 
+            opacity: 0; 
+            transition: opacity 0.8s ease-out;
+        }
+        .scroll-animate.is-visible { 
+            opacity: 1; 
+        }
+        .scroll-animate.is-visible .image-container {
+            transform: translateY(0);
+            opacity: 1;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .scroll-animate.is-visible .feature-text {
+            transform: translateY(0);
+            opacity: 1;
+            transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
+        }
+        .feature-text, .image-container {
+            opacity: 0;
+            transform: translateY(40px);
+        }
 
-        /* --- Hero 英雄區塊 & 登入表單 (參照新截圖) --- */
         #hero-login {
-            height: 100vh;
-            min-height: 700px;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -58,13 +73,21 @@
             z-index: -1;
         }
         .hero-container {
-            width: 100%; max-width: 1100px; /* 調整最大寬度 */
-            display: grid; grid-template-columns: repeat(1, minmax(0, 1fr));
-            align-items: center; gap: 3rem;
+            width: 100%; max-width: 1100px;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 3rem;
         }
         @media (min-width: 1024px) {
-            .hero-container { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+            .hero-container { 
+                flex-direction: row; 
+                justify-content: space-between;
+            }
+            .hero-text-content { flex: 1.2; }
+            .form-wrapper { flex: 1; }
         }
+
         .form-input { background-color: #1f2937; border: 1px solid #4b5563; color: #d1d5db; }
         .form-input:focus { border-color: #06b6d4; box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5); outline: none; }
         .loader-sm { border: 2px solid #374151; border-top: 2px solid #06b6d4; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
@@ -75,34 +98,51 @@
         }
         .tab-button.active { color: #06b6d4; border-bottom-color: #06b6d4; }
         
-        /* --- 功能展示區塊 --- */
+        /* --- ▼▼▼ 【最終修正版】▼▼▼ */
         .feature-section {
-            display: grid; grid-template-columns: repeat(1, minmax(0, 1fr));
-            align-items: center; gap: 2rem; padding: 5rem 2rem;
-            max-width: 1200px; margin: auto;
+            display: grid; 
+            grid-template-columns: 1fr; /* 手機版：單欄佈局 */
+            align-items: center; 
+            gap: 2rem; 
+            padding: 5rem 2rem;
+            max-width: 1200px; 
+            margin: auto;
         }
+        
+        /* 電腦版：啟用兩欄式佈局 */
         @media (min-width: 1024px) {
-            .feature-section { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5rem; }
-            .feature-section.reverse .feature-text { grid-column-start: 1; }
-            .feature-section.reverse .image-container { grid-column-start: 2; }
+            .feature-section { 
+                grid-template-columns: repeat(2, minmax(0, 1fr)); 
+                gap: 5rem; 
+            }
+            /* 預設情況下，HTML中第一個元素在左欄，第二個在右欄 */
+            .feature-section > *:nth-child(1) { grid-column-start: 1; }
+            .feature-section > *:nth-child(2) { grid-column-start: 2; }
+
+            /* 對於有 reverse class 的區塊，交換欄位順序 */
+            /* HTML中第一個元素(圖片)放到右欄 */
+            .feature-section.reverse > *:nth-child(1) { grid-column-start: 2; }
+            /* HTML中第二個元素(文字)放到左欄 */
+            .feature-section.reverse > *:nth-child(2) { grid-column-start: 1; }
         }
+        /* --- ▲▲▲ 【修改結束】▲▲▲ */
+
         .feature-annotation { border-left: 2px solid #4b5563; padding-left: 1.5rem; }
 
-        /* --- ▼▼▼ [核心功能] 可拖曳圖片預覽 ▼▼▼ --- */
         .image-container {
             position: relative;
             border-radius: 0.75rem;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            height: 500px; /* 固定視窗高度 */
+            height: 500px; 
             cursor: grab;
         }
         .image-container.is-dragging { cursor: grabbing; }
         .image-container img {
             width: 100%;
             display: block;
-            pointer-events: none; /* 讓事件在容器上觸發 */
-            user-select: none; /* 防止拖曳時選取圖片 */
+            pointer-events: none;
+            user-select: none;
         }
         .drag-hint {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -110,7 +150,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: white; z-index: 10;
             opacity: 0; transition: opacity 0.3s ease;
-            pointer-events: none; /* 讓 hover 事件穿透 */
+            pointer-events: none;
         }
         .image-container:hover .drag-hint { opacity: 1; }
         .drag-hint-icon { animation: up-down 1.5s ease-in-out infinite; }
@@ -118,14 +158,13 @@
             0%, 100% { transform: translateY(-8px); }
             50% { transform: translateY(8px); }
         }
-        /* --- ▲▲▲ [功能結束] ▲▲▲ --- */
     </style>
 </head>
 <body>
     
     <section id="hero-login">
         <div class="hero-container">
-            <div class="text-center lg:text-left">
+            <div class="text-center lg:text-left hero-text-content">
                 <h1 class="text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-tight">平米內參</h1>
                 <p class="mt-4 text-xl md:text-2xl text-cyan-accent font-semibold">數據驅動的預售屋市場決策平台</p>
                 <div class="mt-6 text-lg text-gray-300 max-w-xl mx-auto lg:mx-0">
@@ -137,7 +176,7 @@
                     </div>
                 </div>
             </div>
-            <div class="w-full max-w-sm mx-auto">
+            <div class="w-full max-w-sm mx-auto form-wrapper">
                  <div id="form-container" class="bg-dark-card/80 backdrop-blur-sm p-8 rounded-xl shadow-2xl">
                     <div class="flex border-b border-gray-700 mb-6"><button id="login-tab" class="tab-button active">登入</button><button id="register-tab" class="tab-button">註冊</button></div>
                     <form id="login-form">
@@ -162,12 +201,12 @@
     </section>
 
     <main id="features">
-        <section class="feature-section">
-            <div class="image-container scroll-animate fade-in-up">
+        <section class="feature-section scroll-animate">
+            <div class="image-container">
                 <img src="css/images/preview-1.jpg" alt="核心指標與排名">
                 <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
             </div>
-            <div class="feature-text scroll-animate fade-in-up">
+            <div class="feature-text">
                 <h2 class="text-3xl font-bold mb-4 text-white">宏觀市場儀表板</h2>
                 <p class="text-lg text-gray-300 mb-6">從市場全局視角出發，快速掌握指定範圍內的宏觀數據。透過互動式圖表與排名，洞悉市場結構與競爭格局，為您的策略佈局提供堅實的數據支撐。</p>
                 <div class="feature-annotation space-y-4">
@@ -179,8 +218,12 @@
             </div>
         </section>
 
-        <section class="feature-section">
-            <div class="feature-text scroll-animate fade-in-up">
+        <section class="feature-section scroll-animate reverse">
+            <div class="image-container">
+                 <img src="css/images/preview-5.jpg" alt="房型去化分析">
+                 <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
+            </div>
+            <div class="feature-text">
                 <h2 class="text-3xl font-bold mb-4 text-white">房型去化分析</h2>
                 <p class="text-lg text-gray-300 mb-6">掌握市場風向，預測未來趨勢。透過動態趨勢圖與熱力圖，追蹤不同房型的銷售速度與主力面積規格，幫助您在產品規劃與銷售策略上，永遠領先一步。</p>
                  <div class="feature-annotation space-y-4">
@@ -190,18 +233,14 @@
                     <div class="flex items-start gap-3"><i class="fa-solid fa-circle-check text-purple-accent mt-1"></i><div><strong class="text-white">面積分佈熱力圖：</strong>視覺化呈現各房型的主力成交坪數區間，點擊即可查看該區間的詳細建案數據。</div></div>
                 </div>
             </div>
-            <div class="image-container scroll-animate fade-in-up">
-                 <img src="css/images/preview-5.jpg" alt="房型去化分析">
-                 <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
-            </div>
         </section>
         
-        <section class="feature-section">
-            <div class="image-container scroll-animate fade-in-up">
+        <section class="feature-section scroll-animate">
+            <div class="image-container">
                 <img src="css/images/preview-6.jpg" alt="垂直水平分析">
                 <div class="drag-hint"><div class="drag-hint-icon"><i class="fa-solid fa-up-down"></i></div><p class="mt-2 text-sm font-semibold">按住拖曳，查看完整畫面</p></div>
             </div>
-            <div class="feature-text scroll-animate fade-in-up">
+            <div class="feature-text">
                 <h2 class="text-3xl font-bold mb-4 text-white">獨家價盤還原系統</h2>
                 <p class="text-lg text-gray-300 mb-6">業界獨家！我們將雜亂的交易數據，智慧還原成視覺化的銷控表與調價熱力圖。您能直觀地比較「水平價差」與「垂直價差」，更能洞察每戶的「真實溢價幅度」，讓建案的定價策略與獲利空間一目了然。</p>
                  <div class="feature-annotation space-y-4">
