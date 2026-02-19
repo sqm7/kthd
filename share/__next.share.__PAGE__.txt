@@ -1,9 +1,9 @@
 1:"$Sreact.fragment"
 2:I[61304,[],"ClientPageRoot"]
-3:I[6890,["4764","static/chunks/4764-31ea95b6b8869d84.js","5969","static/chunks/5969-4a7d3d1ef36bbba0.js","3242","static/chunks/3242-eaa4bf32ded5526b.js","6119","static/chunks/6119-038923257a87abfb.js","310","static/chunks/310-4aa9a15d552653cb.js","6609","static/chunks/6609-5f743d5c58d6f934.js","8028","static/chunks/8028-85c60cf5487d57f5.js","9163","static/chunks/9163-9cd234768274d75a.js","3041","static/chunks/3041-1d04b1e494566385.js","916","static/chunks/916-4c4c7d2371cf2699.js","1007","static/chunks/1007-04998d70fd287dca.js","9038","static/chunks/app/share/page-c5690657a1ba9acf.js"],"default"]
+3:I[6890,["4764","static/chunks/4764-31ea95b6b8869d84.js","3242","static/chunks/3242-eaa4bf32ded5526b.js","5969","static/chunks/5969-4a7d3d1ef36bbba0.js","8500","static/chunks/8500-98e13bcce54aa7a0.js","319","static/chunks/319-ca92f82338a16330.js","3965","static/chunks/3965-e8a920a60f00828e.js","6609","static/chunks/6609-5f743d5c58d6f934.js","8358","static/chunks/8358-e15769106e03c71e.js","6218","static/chunks/6218-4d6314f2b41bd90b.js","8875","static/chunks/8875-bcd09ecc76420b9b.js","2128","static/chunks/2128-198862472c81571d.js","9038","static/chunks/app/share/page-12a3eac3c6a776ee.js"],"default"]
 6:I[90484,[],"OutletBoundary"]
 7:"$Sreact.suspense"
-0:{"buildId":"fXgmy5Eh3XCN-5RiDqaoV","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],null,["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"LHSlFDawypdhiJCt1zY3j","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],null,["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
 4:{}
 5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
 8:null
