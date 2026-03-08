@@ -1,0 +1,25 @@
+# 平米內參 - 預售屋數據儀表板 (sqmtalk.com)
+
+## Detailed Overview
+平米內參 (sqmtalk.com) is a professional-grade analytics platform designed specifically for the Taiwanese real estate market. It focuses on the pre-sale housing (預售屋) sector, providing transparency through advanced data visualization and comparative analysis.
+
+## Key Modules & Data Points
+
+### 1. Price Strategy (定價策略)
+Analyzes the pricing distribution of housing projects. It helps users identify the "Sweet Spot" where price meets market demand, ensuring products are positioned correctly against PR (Percentile Rank) benchmarks.
+
+### 2. Floor Premium & Heatmap (垂直價差熱力圖)
+A unique feature that displays a project's inventory in a grid format, color-coded by price or sales status. This allows for an instant "Floor Premium" analysis, showing how different floors and orientations are valued relative to each other.
+
+### 3. Market Velocity (去化速度)
+Tracks how quickly units are being sold (Velocity) compared to nearby competing projects. This data is crucial for adjusting sales rhythms and marketing strategies dynamically.
+
+### 4. Competitor Analysis (競品排行)
+Provides a macro view of the market share and performance rankings of different developers and specific projects within a selected region.
+
+## Data Sources
+The platform primary source is the Taiwan government's **Real Estate Price Registration (實價登錄)** database, which is processed and enhanced with proprietary algorithms for higher accuracy and better visualization.
+
+## Contact & Links
+- **Website**: [https://www.sqmtalk.com/](https://www.sqmtalk.com/)
+- **Social**: LINE One-Click Login supported for member access.

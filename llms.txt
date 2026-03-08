@@ -1,0 +1,16 @@
+# 平米內參 (sqmtalk.com)
+
+A data-driven decision-making platform for the pre-sale housing market in Taiwan. It integrates Big Data from Real Estate Price Registration (實價登錄) with exclusive "Sales Control Tables" (銷控表) and "Price Heatmaps" (調價熱力圖) to provide precise market insights.
+
+## Core Features
+- **Price Band Analysis**: Visualizes total and unit price distribution to identify market "Sweet Spots."
+- **Vertical Price Heatmap**: Exclusive Floor Premium analysis to reveal pricing logic and sales status across different floors.
+- **Velocity Tracking**: Monitor sales speed and absorption rates of competing projects in real-time.
+- **Ranking Analysis**: Generate reports on regional competitors to understand market positioning.
+
+## Target Audience
+- Real estate developers and sales agencies.
+- Property investors seeking data-driven insights.
+
+## Canonical URL
+- https://www.sqmtalk.com/
