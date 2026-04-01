@@ -1,9 +1,9 @@
 1:"$Sreact.fragment"
 2:I[61304,[],"ClientPageRoot"]
-3:I[66158,["4764","static/chunks/4764-31ea95b6b8869d84.js","8500","static/chunks/8500-98e13bcce54aa7a0.js","5969","static/chunks/5969-4a7d3d1ef36bbba0.js","5955","static/chunks/5955-08254d3db084ca53.js","8962","static/chunks/8962-49ea7bb7f2ef824c.js","4670","static/chunks/4670-a0a65dd4fbc8a16e.js","8140","static/chunks/app/admin/metro/page-3ebdd3397a337140.js"],"default"]
+3:I[66158,["4764","static/chunks/4764-31ea95b6b8869d84.js","8500","static/chunks/8500-f62a38ff68ab7f42.js","5969","static/chunks/5969-d1c27d6719a455b4.js","5955","static/chunks/5955-08254d3db084ca53.js","8962","static/chunks/8962-49ea7bb7f2ef824c.js","4670","static/chunks/4670-a0a65dd4fbc8a16e.js","8140","static/chunks/app/admin/metro/page-3ebdd3397a337140.js"],"default"]
 6:I[90484,[],"OutletBoundary"]
 7:"$Sreact.suspense"
-0:{"buildId":"X8bhKyfdXmTywPp0U5ArD","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],null,["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],null,["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"_MOv9Qb1ciyvIHuhHE_nU"}
 4:{}
 5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
 8:null
